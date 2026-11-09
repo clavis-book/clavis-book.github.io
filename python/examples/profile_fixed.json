@@ -1,0 +1,14 @@
+{
+  "protocol": "wpa2_wpa3",
+  "cipher": "aes",
+  "password_length": 22,
+  "password_kind": "random",
+  "wps": "off",
+  "pmf": "optional",
+  "firmware": "recent",
+  "guest": "separate",
+  "ssid": "neutral",
+  "remote_admin": "off",
+  "admin_password": "changed",
+  "hidden_ssid_mac": "off"
+}

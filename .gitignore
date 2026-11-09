@@ -1,0 +1,22 @@
+# Служебные файлы Python
+__pycache__/
+*.pyc
+
+# Секрет преподавателя, ключ ответов и закрытый банк не должны попасть в репозиторий,
+# даже если их по ошибке положили в папку проекта.
+secret*
+_KEY_*
+teacher_only/
+key_and_lock_teacher/
+wifi_teacher_only/
+/python/teacher_data/questions.json
+
+# Данные настоящей группы: ФИО, варианты, ответы и результаты.
+/python/students.csv
+/python/variants/
+/python/answers/
+/python/answers_*.txt
+/python/results*.csv
+
+# Архивы собираются заново
+*.zip

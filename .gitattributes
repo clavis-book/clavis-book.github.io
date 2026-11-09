@@ -1,0 +1,7 @@
+# cmd неверно разбирает .bat с переводами строк LF,
+# поэтому git всегда хранит и выдаёт их с CRLF.
+*.bat text eol=crlf
+*.py text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.docx binary

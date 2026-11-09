@@ -1,0 +1,14 @@
+{
+  "protocol": "wpa_wpa2",
+  "cipher": "tkip",
+  "password_length": 8,
+  "password_kind": "word",
+  "wps": "pin",
+  "pmf": "off",
+  "firmware": "old",
+  "guest": "main_password",
+  "ssid": "default",
+  "remote_admin": "on",
+  "admin_password": "default",
+  "hidden_ssid_mac": "on"
+}

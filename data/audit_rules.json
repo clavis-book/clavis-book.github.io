@@ -1,0 +1,250 @@
+[
+  {
+    "no": 1,
+    "param": "protocol",
+    "title": "Протокол безопасности",
+    "question": "Какой режим безопасности выбран для основной сети Wi-Fi?",
+    "kind": "choice",
+    "options": [
+      {"value": "wpa3", "label": "только WPA3-Personal", "level": "ok", "penalty": 0, "basis": "источник",
+       "text": "Выбран WPA3-Personal", "recommendation": "Оставьте", "sources": ["wfa_wpa3_2018", "wpa3_spec"]},
+      {"value": "wpa2_wpa3", "label": "WPA2/WPA3 (переходный режим)", "level": "info", "penalty": 0, "basis": "источник",
+       "text": "Переходный режим: старые устройства подключаются по WPA2",
+       "recommendation": "Нормально, если есть старые устройства; пароль нужен такой же длинный, как для WPA2. Когда старые устройства заменены — только WPA3",
+       "sources": ["wpa3_spec", "wfa_wpa3_mand", "cisa_m5"]},
+      {"value": "wpa2", "label": "WPA2-Personal (AES/CCMP)", "level": "low", "penalty": 5, "basis": "решение автора",
+       "text": "WPA2 с AES безопасен при длинном уникальном пароле, но WPA3 надёжнее",
+       "recommendation": "WPA3 дополнительно защищает от подбора пароля по записанному обмену; включите WPA3 или WPA2/WPA3, если роутер умеет",
+       "sources": ["cisa_m5", "wfa_wpa3_2018"]},
+      {"value": "wpa_wpa2", "label": "смешанный WPA/WPA2 (TKIP + AES)", "level": "high", "penalty": 20, "basis": "источник",
+       "text": "Включён устаревший WPA с TKIP",
+       "recommendation": "Выключите WPA и TKIP, оставьте WPA2 (AES) или выше", "sources": ["wfa_tkip_note", "cisa_m5"]},
+      {"value": "wpa", "label": "WPA (TKIP)", "level": "critical", "penalty": 40, "basis": "источник",
+       "text": "Только WPA с TKIP — устаревшая защита",
+       "recommendation": "Сразу перейдите на WPA2 (AES) или WPA3. Wi-Fi Alliance запрещает режим «только TKIP» в основном интерфейсе, а в WPA3 TKIP не используется совсем",
+       "sources": ["wfa_tkip_note", "wpa3_spec", "ieee80211_2020"]},
+      {"value": "wep", "label": "WEP", "level": "critical", "penalty": 40, "basis": "источник",
+       "text": "WEP — в IEEE 802.11-2020 имеет статус obsolete и признан непригодным",
+       "recommendation": "Сразу перейдите на WPA2/WPA3 (дополнение к лекции 14–15)", "sources": ["ieee80211_2020", "cisa_m5"]},
+      {"value": "owe", "label": "Enhanced Open (OWE, без пароля)", "level": "medium", "penalty": 10, "basis": "источник",
+       "text": "Enhanced Open шифрует радиоканал, но не проверяет точку доступа и пускает всех",
+       "recommendation": "Для основной сети включите WPA3 или WPA2 с паролем", "sources": ["rfc_8110", "wfa_security"]},
+      {"value": "open", "label": "открытая сеть без шифрования", "level": "critical", "penalty": 40, "basis": "источник",
+       "text": "Сеть открыта: данные в радиоканале не шифруются",
+       "recommendation": "Включите WPA3 или WPA2 с длинным паролем", "sources": ["cisa_m5", "lecture_14_15_transfer"]}
+    ]
+  },
+  {
+    "no": 2,
+    "param": "cipher",
+    "title": "Шифр",
+    "question": "Какой шифр показывает роутер для Wi-Fi?",
+    "kind": "choice",
+    "skip_if_protocol": ["open", "owe"],
+    "options": [
+      {"value": "aes", "label": "AES/CCMP или GCMP-256", "level": "ok", "penalty": 0, "basis": "источник",
+       "text": "Используется AES", "recommendation": "Оставьте", "sources": ["ieee80211i_2004", "wpa3_spec"]},
+      {"value": "auto", "label": "«Авто» / не знаю", "level": "info", "penalty": 0, "basis": "источник",
+       "text": "Шифр не указан явно", "recommendation": "Проверьте в настройках, что выбран AES, а не TKIP",
+       "sources": ["wfa_tkip_note"]},
+      {"value": "tkip", "label": "TKIP или TKIP + AES", "level": "high", "penalty": 20, "basis": "источник",
+       "text": "Включён устаревший шифр TKIP", "recommendation": "Выберите только AES",
+       "sources": ["wfa_tkip_note", "cisa_m5"]}
+    ]
+  },
+  {
+    "no": 3,
+    "param": "password_length",
+    "title": "Длина пароля Wi-Fi",
+    "question": "Сколько символов в пароле Wi-Fi? Введите число 0–128; сам пароль не вводите! (64 — только если это ключ из 64 шестнадцатеричных символов)",
+    "kind": "range",
+    "skip_if_protocol": ["open", "owe"],
+    "bands": [
+      {"min": 0, "max": 7, "level": "critical", "penalty": 40, "basis": "источник",
+       "text": "Для WPA/WPA2 пароль должен быть 8–63 символа",
+       "recommendation": "Проверьте ввод; задайте 20+ символов или 5–7 случайных несвязанных слов", "sources": ["ieee80211i_2004_h4", "moskowitz_2003"]},
+      {"min": 8, "max": 11, "level": "high", "penalty": 20, "basis": "решение автора",
+       "text": "Пароль короткий",
+       "recommendation": "Сделайте длиннее: 20+ символов или фраза из 5–7 случайных несвязанных слов (не меньше 16 символов)",
+       "sources": ["cisa_m5", "nist_800_97", "ieee80211i_2004_h4", "moskowitz_2003"]},
+      {"min": 12, "max": 19, "level": "medium", "penalty": 10, "basis": "решение автора",
+       "text": "Пароль средней длины",
+       "recommendation": "Для WPA2 и переходного режима желательно 20+: по 802.11i фраза короче ≈ 20 символов вряд ли остановит подбор; для WPA3 длиннее — тоже лучше",
+       "sources": ["ieee80211i_2004_h4", "moskowitz_2003", "nist_800_97", "cisa_m5"]},
+      {"min": 20, "max": 128, "level": "ok", "penalty": 0, "basis": "источник",
+       "text": "Пароль длинный", "recommendation": "Оставьте", "sources": ["nist_800_97", "cisa_m5", "moskowitz_2003"]}
+    ]
+  },
+  {
+    "no": 4,
+    "param": "password_kind",
+    "title": "Вид пароля Wi-Fi",
+    "question": "Какой у пароля Wi-Fi вид? Сам пароль не вводите!",
+    "kind": "choice",
+    "skip_if_protocol": ["open", "owe"],
+    "options": [
+      {"value": "random", "label": "случайная строка из генератора или 5–7 случайных несвязанных слов", "level": "ok", "penalty": 0,
+       "basis": "источник", "text": "Пароль случайный",
+       "recommendation": "Храните в менеджере паролей и не используйте для других учётных записей", "sources": ["cisa_m5", "nist_800_63b"]},
+      {"value": "sticker", "label": "уникальный заводской с наклейки", "level": "low", "penalty": 5, "basis": "решение автора",
+       "text": "Используется заводской пароль с наклейки",
+       "recommendation": "Допустимо, но смените, если наклейку видят посторонние", "sources": []},
+      {"value": "word", "label": "одно слово, имя, дата, номер телефона", "level": "high", "penalty": 20, "basis": "источник",
+       "text": "Пароль легко угадать: словарное слово или личные данные",
+       "recommendation": "Замените на длинную случайную фразу", "sources": ["nist_800_63b", "moskowitz_2003"]},
+      {"value": "default_common", "label": "одинаковый для всех роутеров модели (например, 12345678)", "level": "critical", "penalty": 40,
+       "basis": "источник", "text": "Пароль одинаков у всех роутеров модели",
+       "recommendation": "Смените немедленно: такие пароли есть в списках распространённых", "sources": ["nist_800_63b"]}
+    ]
+  },
+  {
+    "no": 5,
+    "param": "wps",
+    "title": "WPS",
+    "question": "Включена ли функция WPS на роутере?",
+    "kind": "choice",
+    "options": [
+      {"value": "off", "label": "выключена", "level": "ok", "penalty": 0, "basis": "источник",
+       "text": "WPS выключена", "recommendation": "Оставьте выключенной; подключайте устройства вводом пароля или по QR-коду",
+       "sources": ["cisa_m5", "cert_vu723755"]},
+      {"value": "pbc", "label": "включена, только кнопка (PBC)", "level": "low", "penalty": 5, "basis": "решение автора",
+       "text": "WPS включена в режиме кнопки", "recommendation": "Выключите, если не нужна", "sources": ["cisa_m5"]},
+      {"value": "pin", "label": "включена с PIN-кодом / не знаю", "level": "high", "penalty": 20, "basis": "источник",
+       "text": "У метода PIN в WPS известный недостаток проектирования",
+       "recommendation": "Выключите WPS; затем проверьте, что пункт действительно выключен (у некоторых моделей выключение в интерфейсе не срабатывало)",
+       "sources": ["cisa_m5", "cert_vu723755", "us_cert_ta12_006a"]}
+    ]
+  },
+  {
+    "no": 6,
+    "param": "pmf",
+    "title": "Защита служебных кадров (PMF)",
+    "question": "Как настроена защита служебных кадров (PMF, 802.11w, «Защищённые кадры управления»)?",
+    "kind": "choice",
+    "skip_if_protocol": ["open"],
+    "options": [
+      {"value": "required", "label": "обязательна (required)", "level": "ok", "penalty": 0, "basis": "источник",
+       "text": "PMF обязательна", "recommendation": "Оставьте", "sources": ["ieee80211w_2009", "wfa_pmf"]},
+      {"value": "optional", "label": "необязательна (optional/capable)", "level": "low", "penalty": 5, "basis": "источник",
+       "text": "PMF необязательна",
+       "recommendation": "Норма для WPA2 и переходного режима WPA2/WPA3. В режиме «только WPA3» PMF всегда обязательна; если роутер показывает иное — проверьте ввод и обновите прошивку",
+       "sources": ["wpa3_spec"]},
+      {"value": "off", "label": "выключена", "level": "medium", "penalty": 10, "basis": "источник",
+       "text": "PMF выключена: служебные кадры без кода с ключом",
+       "recommendation": "Включите хотя бы «необязательна»", "sources": ["wfa_pmf", "wpa3_spec"]},
+      {"value": "unknown", "label": "не знаю", "level": "info", "penalty": 0, "basis": "источник",
+       "text": "Настройка PMF неизвестна", "recommendation": "Найдите пункт PMF / 802.11w / «Защищённые кадры управления»",
+       "sources": ["wfa_pmf"]}
+    ]
+  },
+  {
+    "no": 7,
+    "param": "firmware",
+    "title": "Обновление прошивки",
+    "question": "Когда обновлялась прошивка роутера?",
+    "kind": "choice",
+    "options": [
+      {"value": "recent", "label": "автообновление включено / обновлялась за последние 6 месяцев", "level": "ok", "penalty": 0,
+       "basis": "решение автора", "text": "Прошивка свежая (порог 6 месяцев — решение автора)",
+       "recommendation": "Оставьте автообновление", "sources": ["cisa_m5", "fbi_psa250507", "nsa_home_2023"]},
+      {"value": "6_12", "label": "обновлялась 6–12 месяцев назад", "level": "low", "penalty": 5, "basis": "решение автора",
+       "text": "Прошивка не обновлялась полгода и больше", "recommendation": "Проверьте наличие обновлений", "sources": ["cisa_m5"]},
+      {"value": "old", "label": "более года назад / никогда / не знаю", "level": "medium", "penalty": 10, "basis": "решение автора",
+       "text": "Прошивка давно не обновлялась",
+       "recommendation": "Обновите через интерфейс роутера или с официального сайта производителя; включите автообновление",
+       "sources": ["cisa_m5", "fbi_psa250507", "wfa_wpa3_2019"]},
+      {"value": "eol", "label": "производитель прекратил поддержку модели", "level": "high", "penalty": 20, "basis": "источник",
+       "text": "Роутер больше не получает обновлений безопасности",
+       "recommendation": "Замените роутер: обновлений безопасности больше не будет", "sources": ["fbi_psa250507", "nsa_home_2023"]}
+    ]
+  },
+  {
+    "no": 8,
+    "param": "guest",
+    "title": "Гостевая сеть",
+    "question": "Как подключаются гости?",
+    "kind": "choice",
+    "options": [
+      {"value": "none", "label": "гостей нет", "level": "info", "penalty": 0, "basis": "источник",
+       "text": "Гостевая сеть не нужна", "recommendation": "Если появятся гости — создайте для них отдельную сеть",
+       "sources": ["cisa_m5"]},
+      {"value": "separate", "label": "отдельная гостевая сеть со своим паролем", "level": "ok", "penalty": 0, "basis": "источник",
+       "text": "Гости в отдельной сети",
+       "recommendation": "Оставьте; устройства умного дома, которым нужен только интернет, тоже перенесите в гостевую сеть",
+       "sources": ["cisa_m5", "lecture_14_15_site"]},
+      {"value": "owe", "label": "гостевая сеть Enhanced Open (без пароля, с шифрованием)", "level": "low", "penalty": 5,
+       "basis": "источник", "text": "Гостевая Enhanced Open защищает от прослушивания, но не проверяет точку доступа",
+       "recommendation": "Допустимо для гостей", "sources": ["rfc_8110", "wfa_security"]},
+      {"value": "open", "label": "гостевая сеть открытая, без шифрования", "level": "medium", "penalty": 10, "basis": "источник",
+       "text": "Гостевая сеть не шифруется",
+       "recommendation": "Задайте гостевой сети отдельный длинный пароль или включите Enhanced Open", "sources": ["cisa_m5", "wfa_security"]},
+      {"value": "main_password", "label": "гостям дают пароль основной сети", "level": "medium", "penalty": 10, "basis": "источник",
+       "text": "Гости знают пароль основной сети", "recommendation": "Создайте гостевую сеть с отдельным паролем",
+       "sources": ["cisa_m5"]}
+    ]
+  },
+  {
+    "no": 9,
+    "param": "ssid",
+    "title": "Имя сети (SSID)",
+    "question": "Какое имя у сети? Само имя не вводите!",
+    "kind": "choice",
+    "options": [
+      {"value": "neutral", "label": "своё нейтральное, без личных данных", "level": "ok", "penalty": 0, "basis": "источник",
+       "text": "Имя сети нейтральное", "recommendation": "Оставьте", "sources": ["cisa_m5"]},
+      {"value": "default", "label": "заводское (марка, модель роутера)", "level": "low", "penalty": 5, "basis": "источник",
+       "text": "Имя сети заводское",
+       "recommendation": "Смените: имя по умолчанию может подсказать модель роутера и её известные уязвимости", "sources": ["cisa_m5"]},
+      {"value": "personal", "label": "содержит фамилию, адрес, номер квартиры", "level": "low", "penalty": 5, "basis": "источник",
+       "text": "Имя сети содержит личные данные", "recommendation": "Уберите личные данные из имени", "sources": ["cisa_m5"]}
+    ]
+  },
+  {
+    "no": 10,
+    "param": "remote_admin",
+    "title": "Удалённое управление",
+    "question": "Включено ли управление роутером из интернета (удалённое управление)?",
+    "kind": "choice",
+    "options": [
+      {"value": "off", "label": "выключено", "level": "ok", "penalty": 0, "basis": "источник",
+       "text": "Удалённое управление выключено", "recommendation": "Оставьте; настраивайте роутер только из домашней сети",
+       "sources": ["cisa_m5", "fbi_psa250507", "nsa_home_2023"]},
+      {"value": "on", "label": "включено", "level": "high", "penalty": 20, "basis": "источник",
+       "text": "Роутером можно управлять из интернета",
+       "recommendation": "Выключите; если управление извне нужно — только через VPN", "sources": ["cisa_m5", "fbi_psa250507", "lecture_14_15_ap"]},
+      {"value": "unknown", "label": "не знаю", "level": "medium", "penalty": 10, "basis": "источник",
+       "text": "Неизвестно, включено ли удалённое управление",
+       "recommendation": "Найдите пункт «Удалённое управление / Remote management» и выключите", "sources": ["cisa_m5"]}
+    ]
+  },
+  {
+    "no": 11,
+    "param": "admin_password",
+    "title": "Пароль администратора роутера",
+    "question": "Какой пароль для входа в настройки роутера? Сам пароль не вводите!",
+    "kind": "choice",
+    "options": [
+      {"value": "changed", "label": "изменён, длинный, уникальный", "level": "ok", "penalty": 0, "basis": "источник",
+       "text": "Пароль администратора изменён", "recommendation": "Оставьте", "sources": ["lecture_14_15_ap", "nist_800_63b"]},
+      {"value": "default", "label": "заводской (admin/admin и т. п.)", "level": "critical", "penalty": 40, "basis": "источник",
+       "text": "Пароль администратора заводской", "recommendation": "Смените немедленно",
+       "sources": ["nist_800_63b", "lecture_14_15_ap"]}
+    ]
+  },
+  {
+    "no": 12,
+    "param": "hidden_ssid_mac",
+    "title": "Скрытое имя сети / фильтр MAC",
+    "question": "Включены ли скрытие имени сети или фильтр MAC-адресов?",
+    "kind": "choice",
+    "options": [
+      {"value": "on", "label": "включены", "level": "info", "penalty": 0, "basis": "источник",
+       "text": "Скрытое имя сети и фильтр MAC-адресов — не средство контроля доступа",
+       "recommendation": "Имя сети передаётся в эфире открыто, а MAC-адрес не шифруется; они не заменяют WPA2/WPA3 (дополнение к лекции 14–15, где эти меры рекомендуются)",
+       "sources": ["nist_800_97", "lecture_14_15_ap"]},
+      {"value": "off", "label": "выключены", "level": "info", "penalty": 0, "basis": "источник",
+       "text": "Скрытое имя сети и фильтр MAC не используются",
+       "recommendation": "Это нормально: доступ защищает WPA2/WPA3, а не скрытие имени", "sources": ["nist_800_97"]}
+    ]
+  }
+]
