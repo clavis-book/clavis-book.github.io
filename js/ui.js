@@ -3,28 +3,17 @@
 // Тексты учебника — недоверенные данные: они попадают на страницу только как текст узлов.
 (function () {
   'use strict';
-  const App = window.App, MK = App.markup;
-  const KEY = 'kilt:v1';
+  const App = window.App, MK = App.markup, ST = App.storage;
   const LOCALES = { ru: 'ru-RU', kk: 'kk-KZ', en: 'en-US' };
-  const THEMES = ['auto', 'light', 'dark'];
 
   // ---------- Хранилище на устройстве ----------
-  // Только настройки, прогресс, ответы самопроверки и коллекция карточек и наград — без имени.
-  // Если хранилище недоступно (приватный режим, запрет браузера), всё работает без сохранения.
-  const plain = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
-  const strings = v => (Array.isArray(v) ? v.filter(x => typeof x === 'string').slice(0, 500) : []);
+  // Что хранится и как проверяется прочитанное — js/store.js. Если хранилище недоступно (приватный режим,
+  // запрет браузера) или в нём запись более новой версии учебника, всё работает без сохранения.
   const store = (() => {
-    let s = {};
-    try { s = plain(JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { s = {}; }
-    if (!MK.LANGS.includes(s.lang)) s.lang = 'ru';
-    if (!THEMES.includes(s.theme)) s.theme = 'auto';
-    s.group = s.group === true;
-    s.progress = plain(s.progress);
-    s.quiz = plain(s.quiz);
-    s.collection = plain(s.collection);
-    s.collection.cards = strings(s.collection.cards);
-    s.collection.badges = strings(s.collection.badges);
-    return { s, save() { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* хранилище недоступно */ } } };
+    let text = null;
+    try { text = localStorage.getItem(ST.KEY); } catch (e) { /* хранилище недоступно */ }
+    const { state: s, newer } = ST.read(text, MK.LANGS);
+    return { s, save() { if (newer) return; try { localStorage.setItem(ST.KEY, JSON.stringify(s)); } catch (e) { /* хранилище недоступно */ } } };
   })();
   const S = store.s;
 
@@ -96,7 +85,7 @@
       if (tok.t === 'cite') return cite(tok.id, tok.loc, ctx);
       if (tok.t === 'check') return h('span', { class: 'check', title: tok.what ? t('ист.что-сверить', { что: tok.what }) : t('ист.не-сверено') }, t('ист.проверить'));
       if (tok.href[0] === '#') return h('a', { href: tok.href }, tok.text);
-      return h('a', { href: tok.href, target: '_blank', rel: 'noopener noreferrer' }, tok.text, h('span', { class: 'ext', 'aria-label': t('ссылка.наружу') }, '↗'));
+      return h('a', { href: tok.href, target: '_blank', rel: 'noopener noreferrer' }, tok.text, h('span', { class: 'ext', 'aria-hidden': 'true' }, '↗'), h('span', { class: 'visually-hidden' }, ' ' + t('ссылка.наружу')));
     });
   }
   function cite(id, loc, ctx) {
@@ -114,7 +103,7 @@
       } }, String(no)),
       src && !src.verified ? h('span', { class: 'check' }, t('ист.проверить')) : null);
   }
-  // Список источников экрана: название (ссылкой, если есть адрес), места, дата сверки; по нажатию —
+  // Список источников экрана: название (ссылкой, если есть адрес https://), места, дата сверки; по нажатию —
   // что именно сверено.
   function sourcesBlock(ctx, title) {
     if (!ctx || !ctx.cites.length) return null;
@@ -126,7 +115,7 @@
         const name = s.title || s.label;
         const what = [s.section, s.note].filter(Boolean).join(' ');
         return h('li', { id: ctx.prefix + (i + 1), lang: 'ru' },
-          s.url ? h('a', { href: s.url, target: '_blank', rel: 'noopener noreferrer' }, name) : name,
+          /^https:\/\//.test(s.url || '') ? h('a', { href: s.url, target: '_blank', rel: 'noopener noreferrer' }, name) : name,
           s.file ? h('span', { class: 'src-note' }, ' (' + s.file + ')') : '',
           c.locs.length ? ', ' + c.locs.join('; ') : '',
           s.checked ? h('span', { class: 'src-note' }, ' — ' + t('ист.сверено', { когда: s.checked })) : '',
@@ -191,6 +180,7 @@
     const area = view.area;
     const link = (href, key) => h('a', { href: '#' + href, 'aria-current': area === href ? 'page' : null }, t(key));
     const nextTheme = { auto: 'light', light: 'dark', dark: 'auto' };
+    // У кнопок языка видимая подпись («RU») входит в имя для программ чтения с экрана («RU — Русский»).
     fill(document.getElementById('top'),
       h('a', { class: 'skip', href: '#app', onclick: ev => { ev.preventDefault(); const m = document.getElementById('app'); m.focus(); m.scrollIntoView(); } }, t('шапка.к-содержанию')),
       h('div', { class: 'top-in' },
@@ -199,11 +189,18 @@
           link('karta', 'шапка.студенту'), link('prepodavatelyu', 'шапка.преподавателю'), link('proektor', 'шапка.проектор')),
         h('div', { class: 'tools' },
           h('div', { class: 'seg', role: 'group', 'aria-label': t('шапка.язык') }, [['ru', 'RU'], ['kk', 'ҚАЗ'], ['en', 'EN']].map(([l, n]) =>
-            h('button', { type: 'button', lang: l, 'data-focus': 'lang-' + l, 'aria-pressed': lang() === l ? 'true' : 'false', 'aria-label': { ru: 'Русский', kk: 'Қазақша', en: 'English' }[l], onclick: () => setPref('lang', l) }, n))),
+            h('button', { type: 'button', lang: l, 'data-focus': 'lang-' + l, 'aria-pressed': lang() === l ? 'true' : 'false', 'aria-label': n + ' — ' + { ru: 'Русский', kk: 'Қазақша', en: 'English' }[l], onclick: () => setPref('lang', l) }, n))),
           h('button', { type: 'button', class: 'tool', 'data-focus': 'theme', onclick: () => setPref('theme', nextTheme[S.theme]) }, t('шапка.тема.' + S.theme)),
           h('button', { type: 'button', class: 'tool', 'data-focus': 'group', 'aria-pressed': S.group ? 'true' : 'false', title: t('шапка.группой.пояснение'), onclick: () => setPref('group', !S.group) }, t('шапка.группой')))),
       lang() !== 'ru' ? h('p', { class: 'draft-lang' }, t('шапка.черновой-перевод')) : null);
+    measureTop();
   }
+  // Высота верхней полосы — в переменную --top-h. На широком экране полоса закреплена, и стили по этой
+  // переменной оставляют под неё место при прокрутке к ответу или заголовку (полоса бывает в одну и в две строки).
+  function measureTop() {
+    document.documentElement.style.setProperty('--top-h', document.getElementById('top').offsetHeight + 'px');
+  }
+  window.addEventListener('resize', measureTop);
 
   // Фокус на заголовок нового экрана: читалка экрана объявит, куда перешли.
   function focusTitle(container) {

@@ -69,6 +69,9 @@ h3 { font-size: 1.08rem; }
 .seg button[aria-pressed="true"] { background: var(--green); color: var(--green-ink); }
 /* На телефоне полоса не закреплена: три строки меню не должны съедать экран при чтении. */
 @media (max-width: 40rem) { .top { position: static; } .nav { margin-left: -.6rem; } }
+/* Полоса закреплена сверху: при прокрутке к ответу или заголовку оставляем под неё место, иначе она их закроет.
+   Высоту полосы (--top-h) измеряет js/ui.js: полоса бывает в одну и в две строки. */
+@media (min-width: 40.0625rem) { html { scroll-padding-top: calc(var(--top-h, 5rem) + .75rem); } }
 
 /* ---------- Каркас страниц ---------- */
 main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 1.25rem 4rem; }
@@ -78,18 +81,16 @@ main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 .row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
 .stack { display: grid; gap: .9rem; min-width: 0; }
 .note { font-size: .9rem; color: var(--ink-2); }
-.proto { border: 1px dashed var(--ochre); color: var(--ochre); background: var(--ochre-soft); border-radius: var(--r); padding: .55rem .8rem; font-size: .9rem; }
 
 .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem .9rem; border-radius: var(--r); border: 1px solid var(--green); background: var(--green); color: var(--green-ink); cursor: pointer; text-decoration: none; font-weight: 600; font-size: .95rem; }
 .btn.ghost { background: transparent; color: var(--green); }
-.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
 .chip { display: inline-block; padding: .05rem .5rem; border-radius: 999px; font-size: .8rem; border: 1px solid var(--rule); color: var(--ink-2); white-space: nowrap; }
 .chip.ok { border-color: var(--green); color: var(--green); }
 .chip.warn { border-color: var(--ochre); color: var(--ochre); background: var(--ochre-soft); }
 .chip.bad { border-color: var(--red); color: var(--red); background: var(--red-soft); }
 
 /* ---------- Карта разделов ---------- */
-.map-head { display: grid; gap: .4rem; }
 .map { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr)); gap: .75rem; }
 .tile { position: relative; display: grid; grid-template-columns: 2.6rem 1fr; gap: .2rem .7rem; align-items: start; text-decoration: none; color: var(--ink);
   background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); padding: .8rem .9rem; min-height: 6.4rem; }
@@ -134,10 +135,9 @@ main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 .callout { display: grid; grid-template-columns: 6.4rem 1fr; gap: .2rem 1rem; padding: .8rem 0; border-top: 1px solid var(--green); border-bottom: 1px solid var(--green); }
 .callout .lab { font-family: var(--display); font-style: italic; color: var(--green); font-size: 1rem; }
 .callout .txt { font-family: var(--display); font-size: 1.02rem; line-height: 1.6; }
-.callout .sub { grid-column: 2; font-size: .82rem; color: var(--ink-2); }
 .callout.important { border-color: var(--rule); }
 .callout.important .lab { color: var(--ink-2); }
-@media (max-width: 34rem) { .callout { grid-template-columns: 1fr; } .callout .sub { grid-column: 1; } }
+@media (max-width: 34rem) { .callout { grid-template-columns: 1fr; } }
 
 .sources { font-size: .88rem; color: var(--ink-2); border-top: 1px solid var(--rule); padding-top: .8rem; }
 .sources ol { margin: .4rem 0 0; padding-left: 1.4rem; display: grid; gap: .3rem; }
@@ -192,7 +192,6 @@ main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 table { border-collapse: collapse; width: 100%; font-size: .93rem; }
 th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
 th { font-weight: 700; color: var(--ink-2); font-size: .85rem; }
-td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 pre.src { background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r); padding: .8rem; overflow-x: auto; font-family: var(--mono); font-size: .82rem; line-height: 1.5; white-space: pre; max-height: 26rem; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (prefers-reduced-motion: no-preference) { .flash { transition: background-color .6s; } }

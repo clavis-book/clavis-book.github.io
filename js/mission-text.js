@@ -68,6 +68,16 @@
     };
   }
 
+  // Карточки общего файла: «- код | Термин | определение». Код постоянный: под ним карточка лежит в коллекции
+  // на устройстве, поэтому термин и определение можно править и переводить, а код менять нельзя.
+  const CARD_CODE = /^[a-z0-9][a-z0-9-]{0,23}$/;
+  function cardsOf(m) {
+    return (m.scenes['карточки'] || []).flatMap(it => it.items || []).map(x => {
+      const [code, term, text] = list(x);
+      return { code: code || '', term: term || '', text: text || '' };
+    });
+  }
+
   // Сколько букв первого слова секрета (до пробела) игрок дочитывает сам, считая первую.
   const firstWordLength = secret => String(secret || '').split(' ')[0].length;
 
@@ -109,9 +119,14 @@
         }
         const q = m.scenes['загадка'];
         if (q && q.options) MK.questionProblems(q).forEach(p => add('ошибка', 'загадка', p));
-        (m.scenes['карточки'] || []).forEach(it => {
-          if (it.type !== 'ul') { add('ошибка', 'карточки', 'карточки — пунктами «- Термин | определение»'); return; }
-          it.items.forEach((x, n) => { if (list(x).length !== 2) add('ошибка', 'карточки', 'карточка ' + (n + 1) + ': нужно «- Термин | определение»'); });
+        if ((m.scenes['карточки'] || []).some(it => it.type !== 'ul')) add('ошибка', 'карточки', 'карточки — только пунктами «- код | Термин | определение»');
+        const cardCodes = new Set();
+        cardsOf(m).forEach((c, n) => {
+          const where = 'карточка ' + (n + 1);
+          if (!c.term || !c.text) add('ошибка', 'карточки', where + ': нужно «- код | Термин | определение»');
+          if (!CARD_CODE.test(c.code)) add('ошибка', 'карточки', where + ': код — латинские буквы, цифры и дефис, например nonce');
+          if (cardCodes.has(c.code)) add('ошибка', 'карточки', where + ': код «' + c.code + '» уже есть у другой карточки');
+          cardCodes.add(c.code);
         });
         continue;
       }
@@ -143,6 +158,6 @@
   }
 
   App.mission = function (text) { const m = parseMission(text, MK.currentScript()); App.missions.push(m); return m; };
-  App.missionText = { parseMission, validate, polygonOf, firstWordLength, commonOf, worldsOf, list, FIRST_WORD, REQUIRED_WORLD, REQUIRED_COMMON };
+  App.missionText = { parseMission, validate, polygonOf, cardsOf, firstWordLength, commonOf, worldsOf, list, FIRST_WORD, REQUIRED_WORLD, REQUIRED_COMMON };
   if (typeof module !== 'undefined' && module.exports) module.exports = App;
 })(typeof self !== 'undefined' ? self : globalThis);

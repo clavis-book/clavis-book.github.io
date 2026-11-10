@@ -72,6 +72,7 @@
     let i = start;
     if (all[i] !== undefined && all[i].trim() === '---') {
       for (i++; i < all.length && all[i].trim() !== '---'; i++) {
+        if (all[i].trim().startsWith('//')) continue;       // заметка для автора
         const m = all[i].match(/^\s*([^:]+):\s*(.*)$/);
         if (m) meta[m[1].trim().toLowerCase()] = m[2].trim();
         else if (all[i].trim()) problems.push({ line: no(i), text: 'строка шапки без двоеточия: «' + all[i].trim() + '»' });
@@ -217,7 +218,9 @@
   // ctx.isRoute(адрес) — есть ли такая страница в учебнике (для ссылок [текст](#адрес)).
   function checkText(raw, add, ctx) {
     const c = ctx || {}, stats = { cited: 0, unverified: 0 };
-    if (/\$\{/.test(raw)) add('ошибка', 'текст', 'сочетание знаков $ и { ломает файл — уберите его');
+    // До этой проверки дело доходит редко: то, что стоит в ${…}, браузер выполняет как код ещё при загрузке
+    // файла, и сюда попадает уже результат. Главный запрет — тест по исходному тексту (tests/content.test.js).
+    if (/\$\{/.test(raw)) add('ошибка', 'текст', 'сочетание знаков $ и { в тексте запрещено: то, что стоит в таких скобках, браузер выполняет как код');
     for (const tok of inlineTokens(raw)) {
       if (tok.t === 'cite') {
         stats.cited++;

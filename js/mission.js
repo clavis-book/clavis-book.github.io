@@ -63,10 +63,15 @@
     } else render();
   }
   function restart() {
+    // place — на каком месте из трёх стоит верный ответ на шагах 1 и 2 «Гаммы»: в каждом прохождении своё,
+    // чтобы ответ нужно было отсчитать, а не запомнить по букве варианта.
+    const place = () => Math.floor(Math.random() * 3);
     run = { stage: 'brief', sc: M.scenario(T.polygonOf(W)), picked: [], misses: 0, hintShown: false, stripMisses: 0,
-      tried: {}, results: {}, current: null, riddleShown: false, riddleMisses: 0, riddleOk: false };
+      place: [place(), place()], tried: {}, results: {}, current: null, riddleShown: false, riddleMisses: 0, riddleOk: false };
     render();
   }
+  // Забыть прохождение: следующий вход в миссию начнёт её сначала («Пройти ещё раз» на карточке миссии).
+  function reset() { run = null; }
   function errorScreen(errors) {
     document.getElementById('app').replaceChildren(h('section', { class: 'page' },
       h('h1', {}, t('ошибки.заголовок')),
@@ -84,7 +89,7 @@
     const sec = section();
     const head = h('header', { class: 'case-head' },
       h('nav', { class: 'crumbs', 'aria-label': V.t('путь') },
-        h('a', { href: '#karta' }, V.t('карта.заголовок')), ' / ',
+        h('a', { href: '#karta', lang: V.lang() }, V.t('карта.заголовок')), ' / ',
         h('a', { href: '#' + sec.id + '-poprobuy' }, V.t('раздел.номер', { n: sec.no }) + '. ' + sec.title)),
       h('p', { class: 'world-name' }, field('мир', 'название'), h('span', {}, ' — ' + field('мир', 'жанр'))),
       h('h1', { tabindex: '-1' }, firstLine(W, 'титул')),
@@ -92,7 +97,7 @@
         h('li', { class: i < idx ? 'done' : (i === idx ? 'now' : null), 'aria-current': i === idx ? 'step' : null }, h('span', { class: 'tn' }, n)))));
     const body = { brief: briefStage, log: logStage, strip: stripStage, fix: fixStage, debrief: debriefStage }[run.stage]();
     app.replaceChildren(h('div', { class: 'mission w-' + W.meta['мир'], lang: 'ru' },
-      V.lang() !== 'ru' ? h('p', { class: 'draft-lang' }, V.t('миссии.только-русский')) : null,
+      V.lang() !== 'ru' ? h('p', { class: 'draft-lang', lang: V.lang() }, V.t('миссии.только-русский')) : null,
       h('section', { class: 'page play' }, head, body)));
     window.scrollTo(0, 0);
     V.focusTitle(app);
@@ -138,6 +143,7 @@
   function logStage() {
     const ctx = V.newCtx();
     const sc = run.sc, p = T.polygonOf(W);
+    run.picked = [];                      // этап открыт заново — выбор в журнале начинается с нуля
     const fb = live();
     const counter = h('p', { class: 'picked', 'aria-live': 'polite' }, t('журнал.выбрано', { n: 0 }));
     const rows = sc.entries.map(e => h('button', {
@@ -261,8 +267,10 @@
     // Шаг 1. На сколько сдвинута первая буква приветствия.
     function askShift() {
       mark(known[0], g.cipher[0]);
-      // Соседние числа — типичные ошибки: забыть букву Ё или посчитать первую букву вместе с последней.
-      const opts = [shift - 1, shift, shift + 1].map(v => ({ value: v, label: t('шаг1.вариант', { n: v }) }));
+      // Три числа подряд: соседние — типичные ошибки (забыть букву Ё, посчитать первую букву вместе с последней).
+      // Верное стоит на месте run.place[0]; меньше единицы варианты не опускаются.
+      const first = Math.max(1, shift - run.place[0]);
+      const opts = [first, first + 1, first + 2].map(v => ({ value: v, label: t('шаг1.вариант', { n: v }) }));
       V.fill(qBox, 
         h('h3', { tabindex: '-1' }, t('шаг1.заголовок')),
         h('p', {}, t('шаг1.вопрос', { буква: show(known[0]), шифр: show(g.cipher[0]), номер: g.no })),
@@ -280,8 +288,8 @@
     function askLetter() {
       const c = s.cipher[0], right = secretGuess[0];
       mark(c);
-      // Соседние буквы: ответ не угадать по виду, его нужно отсчитать.
-      const vals = [M.shiftLetter(right, -1, lang), right, M.shiftLetter(right, 1, lang)];
+      // Три буквы подряд: ответ не угадать по виду, его нужно отсчитать. Верная — на месте run.place[1].
+      const vals = [0, 1, 2].map(k => M.shiftLetter(right, k - run.place[1], lang));
       V.fill(qBox, 
         h('h3', { tabindex: '-1' }, t('шаг2.заголовок')),
         h('p', {}, t('шаг2.вопрос', { номер: s.no, шифр: show(c), шаг: shift })),
@@ -313,15 +321,20 @@
           return;
         }
         misses++; run.stripMisses++;
-        const hints = [h('p', { class: 'hint' }, t('шаг3.подсказка1', { прив: show(known[i]), nп: abc.indexOf(known[i]),
+        const hints = [h('p', { class: 'hint' }, t('шаг3.подсказка1', { прив: show(known[i]), nп: abc.indexOf(known[i]), г: g.no, с: s.no,
           шифр1: show(g.cipher[i]), n1: abc.indexOf(g.cipher[i]), шифр2: show(s.cipher[i]), n2: abc.indexOf(s.cipher[i]) }))];
-        if (misses >= 2) hints.push(h('p', { class: 'hint' }, t('шаг3.подсказка2', { шаг: step, шифр2: show(s.cipher[i]), n2: abc.indexOf(s.cipher[i]), всего: abc.length })));
+        if (misses >= 2) {
+          // Шаг выводится из номеров; если буква шифровки на линейке левее — через конец алфавита.
+          const nп = abc.indexOf(known[i]), n1 = abc.indexOf(g.cipher[i]);
+          hints.push(h('p', { class: 'hint' }, t(n1 >= nп ? 'шаг3.подсказка2' : 'шаг3.подсказка2-круг',
+            { nп, n1, шаг: step, n2: abc.indexOf(s.cipher[i]), всего: abc.length })));
+        }
         if (misses >= 3) hints.push(h('p', { class: 'hint' }, t('шаг3.подсказка3', { номер: abc.indexOf(right) })));
         setFeedback(fb, [h('p', { class: 'verdict bad' }, t('шаг3.мимо', { буква: show(ch) })), scene('гамма.слово-мимо', ctx), hints], 'bad');
       };
       V.fill(qBox, 
         h('h3', { tabindex: '-1' }, t('шаг3.заголовок', { k: i + 1, всего: wordLen })),
-        i === 1 ? h('p', {}, t('шаг3.задание', { номер: s.no })) : null,
+        i === 1 ? h('p', {}, t('шаг3.задание', { номер: s.no, г: g.no, всего: abc.length })) : null,
         h('p', {}, t('шаг3.буква', { прив: show(known[i]), г: g.no, шифр1: show(g.cipher[i]), с: s.no, шифр2: show(s.cipher[i]) })),
         read);
       // Заголовок шага заменён: если фокус был в нём, он ушёл бы со страницы, и буквы с клавиатуры стенд бы не слышал.
@@ -416,24 +429,32 @@
       run.riddleShown = true;
       const q = C.scenes['загадка'];
       const answer = h('div', { class: 'feedback', 'aria-live': 'polite' });
+      const right = q.options.findIndex(o => o.correct);
+      // Загадка решена: разбор верного ответа, реплики и кнопка «Дальше». Каждый ответ показывается
+      // со своим списком источников.
+      function solved() {
+        const actx = V.newCtx();
+        btns[right].classList.add('right'); btns.forEach(x => x.setAttribute('aria-disabled', 'true'));
+        setFeedback(answer, [h('p', {}, V.inline(q.options[right].why, actx)), h('div', { class: 'dialog' }, scene('загадка.верно', actx)),
+          V.sourcesBlock(actx), nextBtn('дальше', 'debrief')], 'ok');
+      }
       const btns = q.options.map((o, k) => h('button', { type: 'button', class: 'opt', 'data-letter': 'АБВГ'[k], onclick: ev => {
         const b = ev.currentTarget;
-        if (b.getAttribute('aria-disabled') === 'true' || run.riddleOk) return;
-        // Каждый ответ показывается заново, со своим списком источников.
-        const actx = V.newCtx();
+        if (b.getAttribute('aria-disabled') === 'true') return;
         if (o.correct) {
           run.riddleOk = true;
-          b.classList.add('right'); btns.forEach(x => x.setAttribute('aria-disabled', 'true'));
-          setFeedback(answer, [h('p', {}, V.inline(o.why, actx)), h('div', { class: 'dialog' }, scene('загадка.верно', actx)),
-            V.sourcesBlock(actx), nextBtn('дальше', 'debrief')], 'ok');
+          solved();
           answer.querySelector('.next').focus();
         } else {
+          const actx = V.newCtx();
           run.riddleMisses++;
           b.classList.add('wrong'); b.setAttribute('aria-disabled', 'true');
           setFeedback(answer, [h('p', {}, V.inline(o.why, actx)), h('div', { class: 'dialog' }, scene('загадка.мимо', actx)), V.sourcesBlock(actx)], 'bad');
         }
       } }, V.inline(o.text, null)));
       V.fill(riddleBox, h('h3', {}, t('загадка.заголовок')), h('p', { class: 'q-stem' }, V.inline(q.stem, null)), h('div', { class: 'opts' }, btns), answer);
+      // Игрок решил загадку, ушёл со страницы и вернулся: ответ и кнопка «Дальше» на месте, тупика нет.
+      if (run.riddleOk) solved();
     }
     const stage = h('div', { class: 'stage' },
       h('h2', {}, stageName(3)),
@@ -455,10 +476,11 @@
       { id: 'tester', name: t('награда.испытатель'), got: M.RULES.every(r => run.tried[r]), how: t('награда.испытатель-как') },
       { id: 'riddle', name: t('награда.сразу'), got: run.riddleMisses === 0, how: t('награда.сразу-как') }
     ];
-    const cards = (C.scenes['карточки'] || []).flatMap(it => (it.items || []).map(T.list));
+    // В коллекции и в прогрессе — постоянные коды (r11-m01:nonce, missiya-r11-m01), а не тексты.
+    const cards = T.cardsOf(C);
     badges.forEach(b => { if (b.got) V.collection.add('badges', id + ':' + b.id); });
-    cards.forEach(([term]) => V.collection.add('cards', id + ':' + term));
-    App.markDone(sec.id, 'миссия ' + id);
+    cards.forEach(c => V.collection.add('cards', id + ':' + c.code));
+    App.markDone(sec.id, 'missiya-' + id);
     const part = (title, key) => h('section', { class: 'deb' }, h('h2', {}, title), scene(key, ctx, C));
     return h('div', { class: 'stage' },
       h('h2', {}, stageName(4)),
@@ -469,7 +491,7 @@
       part(t('итог.сильнее'), 'сильнее'),
       V.callout('honest', t('итог.упрощение'), scene('упрощение', ctx, C)),
       h('section', { class: 'deb' }, h('h2', {}, t('итог.карточки')),
-        h('div', { class: 'cards' }, cards.map(([term, def]) => h('article', { class: 'term' }, h('h3', {}, term), h('p', {}, V.inline(def, ctx)))))),
+        h('div', { class: 'cards' }, cards.map(c => h('article', { class: 'term' }, h('h3', {}, c.term), h('p', {}, V.inline(c.text, ctx)))))),
       h('section', { class: 'deb' }, h('h2', {}, t('итог.награды')),
         h('ul', { class: 'badges' }, badges.map(b => h('li', { class: b.got ? 'got' : null },
           h('b', {}, b.name), h('span', {}, ' — ' + t(b.got ? 'награда.получено' : 'награда.пока-нет', { как: b.how }))))),
@@ -481,5 +503,5 @@
         h('button', { type: 'button', class: 'btn ghost', onclick: restart }, t('итог.заново'))));
   }
 
-  App.missionView = { open, restart };
+  App.missionView = { open, restart, reset };
 })();

@@ -9,22 +9,26 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { ROOT, read } = require('./load.js');
 
-// Весь JavaScript, который попадает на страницу: код, модели, содержание и копия источников.
+// Весь JavaScript, который попадает на страницу: код, модели, содержание, копия источников и всё, что
+// подключено к страницам тегом script, где бы оно ни лежало. Не входят только тесты моделей (models/tests).
 function siteJs() {
   const out = [];
   const walk = dir => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).forEach(d => {
     const rel = dir + '/' + d.name;
-    if (d.isDirectory()) { if (d.name !== 'tests') walk(rel); } else if (d.name.endsWith('.js')) out.push(rel);
+    if (d.isDirectory()) { if (rel !== 'models/tests') walk(rel); } else if (d.name.endsWith('.js')) out.push(rel);
   });
   ['js', 'models', 'content'].forEach(walk);
   out.push('data/sources.js');
+  for (const page of fs.readdirSync(ROOT).filter(f => f.endsWith('.html'))) {
+    for (const m of read(page).matchAll(/<script\b[^>]*\bsrc\s*=\s*["']?([^"'\s>]+)/gi)) if (!out.includes(m[1])) out.push(m[1]);
+  }
   return out.sort();
 }
 const htmlPages = () => fs.readdirSync(ROOT).filter(f => f.endsWith('.html'));
-// Комментарии убираем: в них можно объяснять, чего код не делает.
-const code = src => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"\\])\/\/.*$/gm, '$1');
 
-// Что запрещено в коде страницы. Имена в этом файле — строки, а не вызовы; сам файл в проверку не входит.
+// Что запрещено в коде страницы. Ищем по всему тексту файла, вместе с комментариями: вырезание комментариев
+// можно обмануть (строка 'a//b' спрятала бы всё, что стоит после неё), поэтому и в пояснениях эти слова
+// не пишем — говорим по-русски («сеть», «вставка HTML-строк»). Сам этот файл в проверку не входит.
 const FORBIDDEN = [
   ['fetch(', 'сеть'], ['XMLHttpRequest', 'сеть'], ['WebSocket', 'сеть'], ['EventSource', 'сеть'], ['sendBeacon', 'сеть'],
   ['RTCPeerConnection', 'сеть'], ['import(', 'загрузка кода'], ['importScripts', 'загрузка кода'], ['Worker(', 'загрузка кода'],
@@ -43,20 +47,44 @@ const FORBIDDEN = [
 ];
 const STORAGE = ['localStorage', 'sessionStorage', 'indexedDB'];
 
-function problems(rel, src) {
-  const text = code(src), found = [];
-  for (const [needle, why] of FORBIDDEN) if (text.includes(needle)) found.push(rel + ': ' + needle + ' (' + why + ')');
+// Элементы, которые сами что-то загружают или отправляют: страница их не создаёт.
+const LOADING_TAGS = 'img|iframe|script|link|object|embed|audio|video|source|track|form|base|meta|picture|image|use';
+
+function problems(rel, text) {
+  const found = [];
+  // Запрещённое ищем и в «сплющенном» тексте: без пробелов, без «?.» и с одинаковыми кавычками, —
+  // чтобы пробел перед скобкой или двойные кавычки ничего не прятали.
+  const flat = text.replace(/\s+/g, '').replace(/\?\./g, '.').replace(/["`]/g, "'");
+  for (const [needle, why] of FORBIDDEN) {
+    if (text.includes(needle) || flat.includes(needle.replace(/\s+/g, '').replace(/"/g, "'"))) found.push(rel + ': ' + needle + ' (' + why + ')');
+  }
+  // Код страницы и модели (не тексты содержания): из адреса страницы — только часть после #, никаких новых
+  // окон, нажатий из кода, адресов через setAttribute, файлов, перетаскивания и вставки.
+  if (/^(?:js|models)\//.test(rel)) {
+    if (/\blocation\b(?!\.hash\b)/.test(text)) found.push(rel + ': из адреса страницы разрешён только location.hash');
+    if (/(?<![\w$.])(?<!function\s+)open\s*\(|(?:window|self|globalThis|top|parent)\s*\??\.\s*open\b/.test(text)) found.push(rel + ': новое окно из кода');
+    if (/\.click\s*\(/.test(text)) found.push(rel + ': нажатие из кода');
+    if (/["'`](?:file|drop|paste|drag\w*)["'`]/.test(text)) found.push(rel + ': файлы, перетаскивание или вставка');
+    if (/setAttribute(?:NS)?\s*\(\s*(?:[\w.]+\s*,\s*)?["'`](?:href|src|srcset|action|formaction|data|poster|ping|xlink:href)["'`]/.test(text)) found.push(rel + ': адрес через setAttribute');
+  }
   if (rel !== 'js/ui.js') for (const s of STORAGE) if (text.includes(s)) found.push(rel + ': ' + s + ' (хранилище — только в js/ui.js)');
   // Таймеры и обработчики — только с функцией, не со строкой кода.
   if (/set(?:Timeout|Interval)\(\s*['"`]/.test(text)) found.push(rel + ': setTimeout со строкой');
-  if (/\.(?:src|href|action)\s*=(?!=)/.test(text)) found.push(rel + ': адрес задаётся из кода');
+  if (/\.(?:src|href|action|srcset|data)\s*=(?!=)/.test(text)) found.push(rel + ': адрес задаётся из кода');
+  // Переход на другой адрес: из кода меняется только часть адреса после # (location.hash).
+  if (/location\s*\.\s*(?:assign|replace|reload)|location\s*(?:\.\s*(?:href|pathname|search|host\w*|protocol|port))?\s*=(?!=)|location\s*\[/.test(text)) {
+    found.push(rel + ': переход на другой адрес из кода');
+  }
+  if (new RegExp('(?:\\bh|\\bs|svg|createElement(?:NS)?)\\s*\\(\\s*(?:[\\w.]+\\s*,\\s*)?[\'"`](?:' + LOADING_TAGS + ')[\'"`]').test(text)) {
+    found.push(rel + ': элемент, который загружает или отправляет данные');
+  }
   return found;
 }
 
 test('код страницы не обращается к сети, не вставляет HTML-строки и не выполняет строки как код', () => {
   const files = siteJs();
   assert.ok(files.length >= 20, 'проверяется слишком мало файлов: ' + files.length);
-  for (const must of ['js/app.js', 'js/ui.js', 'js/mission.js', 'js/interactives.js', 'js/markup.js', 'models/nonce-reuse.js', 'content/ui/ru.js']) {
+  for (const must of ['js/app.js', 'js/ui.js', 'js/store.js', 'js/mission.js', 'js/interactives.js', 'js/markup.js', 'models/nonce-reuse.js', 'content/ui/ru.js']) {
     assert.ok(files.includes(must), 'не проверяется ' + must);
   }
   const found = files.flatMap(rel => problems(rel, read(rel)));
@@ -71,11 +99,21 @@ test('проверка проверяющего: на плохом коде ср
     "localStorage.setItem('k', 'v')", "el.setAttribute('onclick', 'x()')", 'new DOMParser()', "window.open('x')",
     'document.cookie', "el.style.cssText = 'color:red'", "new Worker('w.js')", 'navigator.serviceWorker.register(u)',
     'new FileReader()', "h('input', { type: 'file' })", 'ev.dataTransfer.files', "el.addEventListener('paste', f)",
-    "ev.clipboardData.getData('text')", "h('div', { ondrop: f })", 'window.showOpenFilePicker()'
+    "ev.clipboardData.getData('text')", "h('div', { ondrop: f })", 'window.showOpenFilePicker()',
+    "location.assign('https://example.org')", "location.replace(u)", "location.href = u", "window.location = u",
+    "location['href'] = u", "h('img', { src: u })", "s('image', { href: u })", "document.createElement('iframe')",
+    "h('form', { action: u })",
+    // Комментарий и строка с двумя косыми чертами запрещённое не прячут.
+    "const a = 'a//b'; fetch('/x');", "// el.innerHTML = s", "/* eval('1') */",
+    // Пробел перед скобкой, двойные кавычки, «?.» и обходные пути к адресу и файлам.
+    "fetch (u)", "h ('img', { src: u })", 'h("input", { type: "file" })', "h('input', {type:'file'})", "inp.type = 'file'",
+    'el.addEventListener("drop", f)', 'el.addEventListener("paste", f)', "el.addEventListener('dragover', f)",
+    "open(u)", "window.open (u)", "window?.open(u)", "Object.assign(location, { href: u })", "const L = location; L.assign(u)",
+    "location?.assign(u)", "a.click()", "el.setAttribute('href', u)", 'el.setAttributeNS(ns, "xlink:href", u)'
   ];
   for (const line of bad) assert.ok(problems('js/proba.js', line).length, 'не поймано: ' + line);
-  // Комментарии и разрешённое — не ловятся.
-  assert.deepEqual(problems('js/proba.js', "// fetch( и innerHTML здесь только в комментарии\nel.replaceChildren(h('p', {}, text));\nsetTimeout(tick, 55);"), []);
+  // Разрешённое — не ловится.
+  assert.deepEqual(problems('js/proba.js', "// здесь нет сети и вставки HTML-строк\nel.replaceChildren(h('p', {}, text));\nsetTimeout(tick, 55);\nlocation.hash = 'karta';\nif (location.hash === '#x') s('line', { x1: 0 });\nfunction open(id) { return id; }\nApp.missionView.open(r.mission);"), []);
   assert.deepEqual(problems('js/ui.js', "localStorage.getItem('kilt:v1')"), []);
 });
 

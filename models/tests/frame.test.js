@@ -197,11 +197,14 @@ function missionFiles() {
 }
 
 // Адреса и сетевые данные, которых не должно быть в материалах (рамка 2).
-function addressProblems(text) {
+function addressProblems(raw) {
+  // Полноширинные цифры и невидимые знаки (мягкий перенос, пробел нулевой ширины) адрес не прячут.
+  const text = raw.normalize('NFKC').replace(/\p{Cf}/gu, '');
   const out = [];
   const checks = [
     [/\b(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b/, 'похоже на MAC-адрес'],
     [/\b[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\.[0-9A-Fa-f]{4}\b/, 'похоже на MAC-адрес с точками'],
+    [/\b(?:[0-9A-Fa-f]{2} ){5}[0-9A-Fa-f]{2}\b/, 'похоже на MAC-адрес через пробелы'],
     [/\b[0-9A-Fa-f]{12}\b/, '12 шестнадцатеричных знаков подряд (MAC без разделителей)'],
     [/\b(?:\d{1,3}\.){3}\d{1,3}\b/, 'похоже на IP-адрес'],
     [/\b[0-9A-Fa-f]{1,4}::[0-9A-Fa-f]{0,4}\b|\b(?:[0-9A-Fa-f]{1,4}:){3,7}[0-9A-Fa-f]{1,4}\b/, 'похоже на IPv6-адрес'],
@@ -221,11 +224,11 @@ const FORBIDDEN_WORDS = [
   'режим монитор', 'деаутентифик', 'аиркрак', 'айркрак', 'эйркрак', 'вайршарк', 'ваиршарк', 'хэшкэт', 'хешкэт',
   'хэшкет', 'метасплоит', 'беттеркап', 'перехват рукопожат', 'capture handshake'
 ];
-// Кириллические буквы, похожие на латинские: «аircrack» с русской «а» тоже должен ловиться.
+// Кириллические буквы, похожие на латинские: название из списка, набранное с русской «а», тоже должно ловиться.
 const HOMOGLYPHS = { 'а': 'a', 'в': 'b', 'е': 'e', 'ё': 'e', 'к': 'k', 'м': 'm', 'н': 'h', 'о': 'o', 'р': 'p', 'с': 'c',
   'т': 't', 'у': 'y', 'х': 'x', 'і': 'i', 'ј': 'j', 'ѕ': 's', 'һ': 'h', 'ԁ': 'd', 'ԛ': 'q', 'ԝ': 'w' };
 function normalized(text) {
-  const plain = text.normalize('NFKC')
+  const plain = text.normalize('NFKC').replace(/\p{Cf}/gu, '')        // невидимые знаки слово не разрывают
     .replace(/\\u\{([0-9a-fA-F]+)\}|\\u([0-9a-fA-F]{4})|\\x([0-9a-fA-F]{2})/g, (_, a, b, c) => String.fromCodePoint(parseInt(a || b || c, 16)))
     .toLowerCase();
   return [plain, plain.replace(/[а-яёіјѕһԁԛԝ]/g, ch => HOMOGLYPHS[ch] || ch)];
@@ -262,21 +265,25 @@ test('миссии, модели, источники и страницы: нет
   assert.deepEqual([...new Set(found)], []);
 });
 
-// Стоп-списки названий лежат в тестах рамок — в этих файлах слова стоят нарочно.
+// Стоп-списки названий лежат в тестах рамок: там слова стоят нарочно. Из этих файлов вырезается только сам
+// список — остальной их текст проверяется, как и всё остальное.
 const STOP_LISTS = ['models/tests/frame.test.js', 'python/tests/test_principles.py', 'python/tests/test_variants.py'];
-const TEXT_FILE = /\.(js|py|md|json|txt|csv|html|css|bat)$/;
+const STOP_LIST_BODY = /^(?:const )?(?:FORBIDDEN_WORDS|FORBIDDEN_IN_PRINCIPLES) = \[[\s\S]*?\];?$/m;
+const withoutStopList = (f, text) => (STOP_LISTS.includes(f) ? text.replace(STOP_LIST_BODY, '') : text);
+// Не читаются только двоичные файлы (шрифты, документы Word, картинки) и папка шрифтов в корне.
+const BINARY_FILE = /\.(ttf|otf|woff2?|png|jpe?g|gif|ico|docx|xlsx|pptx|pdf|zip|pyc)$/i;
 const relative = f => path.relative(ROOT, f).split(path.sep).join('/');
-// Все текстовые файлы репозитория, кроме стоп-списков: тесты, данные, документы, инструменты, консольная версия.
+// Все файлы репозитория с текстом: тесты, данные, документы, инструменты, консольная версия.
 function repoTextFiles() {
   const out = [];
   const walk = dir => {
     for (const d of fs.readdirSync(dir, { withFileTypes: true })) {
       const f = path.join(dir, d.name);
-      if (d.isDirectory()) { if (!['.git', '__pycache__', 'fonts'].includes(d.name)) walk(f); } else if (TEXT_FILE.test(d.name)) out.push(f);
+      if (d.isDirectory()) { if (!['.git', '__pycache__'].includes(d.name) && relative(f) !== 'fonts') walk(f); } else if (!BINARY_FILE.test(d.name)) out.push(f);
     }
   };
   walk(ROOT);
-  return out.map(relative).filter(f => !STOP_LISTS.includes(f));
+  return out.map(relative);
 }
 
 test('весь репозиторий (тесты, данные, документы, инструменты): нет названий программ для атак', () => {
@@ -285,7 +292,8 @@ test('весь репозиторий (тесты, данные, докумен�
     assert.ok(files.some(f => f.startsWith(dir)), 'не проверяется папка ' + dir);
   }
   const found = [];
-  for (const f of files) for (const text of normalized(read(path.join(ROOT, f)))) for (const w of FORBIDDEN_WORDS) {
+  for (const f of [...STOP_LISTS, 'tools/make_vectors.py', '.gitattributes']) assert.ok(files.includes(f), 'не проверяется ' + f);
+  for (const f of files) for (const text of normalized(withoutStopList(f, read(path.join(ROOT, f))))) for (const w of FORBIDDEN_WORDS) {
     if (text.includes(w)) found.push(f + ': ' + w);
   }
   assert.deepEqual([...new Set(found)], []);
@@ -293,35 +301,63 @@ test('весь репозиторий (тесты, данные, докумен�
 
 // В описании источника (поля title, label и section файла data/sources.js) разрешены только номер пункта
 // сразу после знака § («§3.1.1.2» похож на IP-адрес) и три термина из названий стандартов — целыми словами
-// и именно в таком написании. Всё остальное в этих полях, адрес публикации (url), прочие поля источников
-// и все тексты учебника и миссий проверяются целиком.
-const SECTION_NUMBER = /§\s?\d+(?:\.\d+)+/g;
-const SOURCE_TERMS = /\b(?:SSID|PSK|Passphrase)\b/g;
-const SOURCE_FIELD = /^\s*"(?:title|label|section)":/;
-const sourcesText = src => src.split('\n')
-  .map(l => (SOURCE_FIELD.test(l) ? l.replace(SECTION_NUMBER, '§').replace(SOURCE_TERMS, '') : l)).join('\n');
+// и именно в таком написании. Номер пункта — до пяти частей по одной-две цифры без нуля впереди: «§192.0.2.7»
+// и адрес, приклеенный к номеру, под исключение не попадают. Термин со знаком «=» или «:» после него — уже не
+// название, а запись «имя сети = …». Всё остальное в этих полях, адрес публикации (url), прочие поля
+// источников и все тексты учебника и миссий проверяются целиком.
+const SECTION_NUMBER = /§\s?[1-9]\d?(?:\.[1-9]\d?){1,4}(?!\.?\d)/g;
+const SOURCE_TERMS = /\b(?:SSID|PSK|Passphrase)\b(?!\s*[=:])/g;
+const SOURCE_FIELDS = ['title', 'label', 'section'];
+const asText = v => (typeof v === 'string' ? v : JSON.stringify(v));
+const sourceFieldText = (key, value) => (SOURCE_FIELDS.includes(key)
+  ? asText(value).replace(SECTION_NUMBER, '§').replace(SOURCE_TERMS, '') : asText(value));
+// Источники проверяются по разобранным значениям полей, а не по тексту файла: цифру не спрятать записью
+// через \u, а исключение не достаётся соседнему полю в той же строке.
+const sourcesText = () => Object.values(loadSources())
+  .flatMap(s => Object.entries(s).map(([key, value]) => sourceFieldText(key, value))).join('\n');
 
 test('миссии, источники и страницы: нет адресов, имён сетей и паролей', () => {
   const sources = path.join(ROOT, 'data', 'sources.js');
   const files = [...missionFiles(), ...contentFiles(), sources, ...rootPages()];
   const found = [];
   for (const f of files) {
-    const text = f === sources ? sourcesText(read(f)) : read(f);
+    const text = f === sources ? sourcesText() : read(f);
     for (const p of addressProblems(text)) found.push(relative(f) + ': ' + p);
   }
   assert.deepEqual(found, []);
 });
 
 test('проверка проверяющего: в описании источника ловится всё, кроме номера пункта и трёх терминов', () => {
-  const inField = s => addressProblems(sourcesText('  "section": "' + s + '",'));
+  const inField = s => addressProblems(sourceFieldText('section', s));
   assert.deepEqual(inField('§3.1.1.2: SSID «is not an access control feature»; pass-phrase-to-PSK; Passphrase'), []);
   for (const bad of ['адрес 192.0.2.1', 'п. 3.1.1.2 без знака параграфа', '00-00-5E-00-53-01', 'AABBCCDDEEFF', 'fe80::1',
-    'имя сети ssid', 'ключ psk', 'passphrase строчными']) {
+    'имя сети ssid', 'ключ psk', 'passphrase строчными', '§192.0.2.7', '§10.0.0.1', '§3.1.1.2.192.0.2.1', '§1234.5678.9012',
+    'SSID=PRIMER', 'PSK: primer12345', '１９２.０.２.１ полноширинными цифрами', '192.0.​2.1 с невидимым знаком', '00 00 5E 00 53 01']) {
     assert.ok(inField(bad).length, 'не поймано в описании источника: ' + bad);
   }
   // В остальных полях источника исключений нет.
-  assert.ok(addressProblems(sourcesText('  "note": "SSID"')).length);
-  assert.ok(addressProblems(sourcesText('  "url": "https://192.0.2.1/x"')).length);
+  assert.ok(addressProblems(sourceFieldText('note', 'SSID')).length);
+  assert.ok(addressProblems(sourceFieldText('note', '§3.1.1.2')).length);
+  assert.ok(addressProblems(sourceFieldText('url', 'https://192.0.2.1/x')).length);
+  // Невидимый знак внутри названия программы из стоп-списка его не прячет.
+  const hidden = FORBIDDEN_WORDS[0].slice(0, 3) + '­' + FORBIDDEN_WORDS[0].slice(3);
+  assert.ok(normalized(hidden).some(text => text.includes(FORBIDDEN_WORDS[0])));
+});
+
+// Адреса — во всём репозитории: в коде страницы, данных, документах, инструментах и консольной версии.
+// Не проверяются только этот файл (в нём образцы для проверок выше — адреса из диапазонов для документации)
+// и номер пункта «3.1.1.2» стандарта NIST SP 800-97, который по виду не отличить от IP-адреса.
+// Слова «ssid» и «psk» здесь не ищем: в данных и консольной версии это имена полей настроек.
+const NIST_CLAUSE = /(?<![\d.])3\.1\.1\.2(?![\d.])/g;
+test('весь репозиторий: нет MAC-, IP- и IPv6-адресов', () => {
+  const found = [];
+  for (const f of repoTextFiles().filter(f => f !== 'models/tests/frame.test.js')) {
+    const problems = addressProblems(read(path.join(ROOT, f)).replace(NIST_CLAUSE, '')).filter(p => !p.startsWith('имя сети'));
+    for (const p of problems) found.push(f + ': ' + p);
+  }
+  assert.deepEqual(found, []);
+  assert.ok(addressProblems('пункт 3.1.1.21'.replace(NIST_CLAUSE, '')).length, 'похожее на номер пункта, но длиннее — ловится');
+  assert.ok(addressProblems('13.1.1.2'.replace(NIST_CLAUSE, '')).length);
 });
 
 test('тексты полигона во всех мирах — только буквы полигона, ключ — слово полигона, данные вымышленные', () => {

@@ -178,9 +178,10 @@
 
   // ---------- Вопросы «Проверь себя»: разбор каждого варианта и лестница подсказок ----------
   // Ответы хранятся только на устройстве: верно сразу (right), не сразу (retry), с подсказкой (hint), неверно (wrong).
-  function markDone(section, step) {
+  // Отметка «пройдено»: код раздела и код ступени (prosto, proverka) или миссии (missiya-r11-m01).
+  function markDone(section, code) {
     const p = V.S.progress[section] = V.S.progress[section] || {};
-    p[step] = true; V.store.save();
+    p[code] = true; V.store.save();
   }
   function quiz(file, ctx, section) {
     const wrap = h('div', { class: 'q' });
@@ -206,7 +207,7 @@
       });
       function done() {
         sumEl.textContent = summary(); V.refreshSources(ctx);
-        if (file.records.every(r => res[r.id] && res[r.id] !== 'wrong')) markDone(section, 'проверка');
+        if (file.records.every(r => res[r.id] && res[r.id] !== 'wrong')) markDone(section, 'proverka');
       }
       const checkBtn = h('button', { type: 'button', class: 'btn', disabled: true, onclick: () => {
         const o = q.options[chosen];
@@ -217,7 +218,10 @@
         else fb.replaceChildren(h('p', {}, h('strong', {}, t(hintsUsed ? 'вопрос.верно-подсказка' : wrongTries ? 'вопрос.верно-не-сразу' : 'вопрос.верно'))));
         V.store.save();
       } }, t('вопрос.проверить'));
+      // Кнопка лестницы: подсказка, ещё подсказка, показать решение. После решения она не отключается
+      // (отключённая кнопка теряет фокус клавиатуры), а помечается aria-disabled и нажатия пропускает.
       const hintBtn = h('button', { type: 'button', class: 'btn ghost', onclick: () => {
+        if (hintBtn.getAttribute('aria-disabled') === 'true') return;
         if (hintsUsed < maxHints) {
           hintsBox.append(h('p', { class: 'hint' }, h('strong', {}, t('вопрос.подсказка-н', { n: hintsUsed + 1 }) + ' '), V.inline(q.hints[hintsUsed], ctx)));
         } else {
@@ -226,12 +230,16 @@
             const w = l.querySelector('.why'); if (w) w.remove();
             l.append(h('span', { class: 'why' }, V.inline(q.options[i].why, ctx)));
           });
-          solved = true; res[q.id] = 'hint'; hintBtn.disabled = true; done(); V.store.save();
-          fb.replaceChildren(h('p', {}, h('strong', {}, t('вопрос.решение-показано'))));
+          hintBtn.setAttribute('aria-disabled', 'true');
+          // Ответ, данный до подсказок, остаётся как был: «с подсказкой» засчитывается только нерешённый вопрос.
+          if (!solved) {
+            solved = true; res[q.id] = 'hint'; done(); V.store.save();
+            fb.replaceChildren(h('p', {}, h('strong', {}, t('вопрос.решение-показано'))));
+          }
         }
         hintsUsed++;
         [...ladder.children].forEach((sp, i) => sp.classList.toggle('used', i < hintsUsed));
-        if (!hintBtn.disabled) hintBtn.textContent = t(hintsUsed >= maxHints ? 'вопрос.показать-решение' : 'вопрос.ещё-подсказка');
+        hintBtn.textContent = t(hintsUsed >= maxHints ? 'вопрос.показать-решение' : 'вопрос.ещё-подсказка');
       } }, t(maxHints ? 'вопрос.подсказка' : 'вопрос.показать-решение'));
       const nav = (d, key, off) => h('button', { type: 'button', class: 'btn ghost', disabled: off, onclick: () => { idx += d; show(true); } }, t(key));
       V.fill(wrap,

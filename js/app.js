@@ -6,7 +6,7 @@
   const App = window.App, V = App.view, MK = App.markup, CM = App.model;
   const { h, t, S } = V;
   const app = document.getElementById('app');
-  const CORE_STEPS = ['просто', 'попробуй', 'глубже', 'проверка'];   // отметки на карте
+  const CORE_STEPS = ['prosto', 'poprobuy', 'glubzhe', 'proverka'];   // отметки на карте (коды ступеней)
 
   // Проверка содержания при запуске: ошибка в тексте видна сразу, а не превращается в пустой экран.
   const expected = Array.from(document.querySelectorAll('script[src^="content/"], script[src^="data/"]'), s => s.getAttribute('src'));
@@ -18,7 +18,7 @@
     ? h('p', { class: 'banner bad', role: 'status' }, t('ошибки.баннер', { n: errors.length }), ' ', h('a', { href: '#model' }, t('ошибки.смотреть')))
     : null;
   const stepInfo = slug => CM.STEPS.find(s => s.slug === slug);
-  const done = (sec, step) => !!(S.progress[sec] || {})[step];
+  const done = (sec, slug) => !!(S.progress[sec] || {})[slug];      // прогресс хранится по кодам раздела и ступени
   const hasStep = (sec, step) => !!App.find(sec, step, 'ru');
   function lectures(l) {
     if (/^\d+$/.test(l)) return t('раздел.лекция', { n: l });
@@ -87,7 +87,7 @@
           h('p', { class: 'section-title' }, sec.title))));
     const steps = h('nav', { class: 'steps reading', 'aria-label': t('ступени.меню') }, h('ol', {}, CM.STEPS.map((st, i) =>
       h('li', {}, h('a', { href: '#' + secId + '-' + st.slug, class: hasStep(secId, st.name) ? null : 'off', 'aria-current': st.slug === slug ? 'page' : null },
-        h('span', { class: 'n', 'aria-hidden': 'true' }, i + 1), t('ступень.' + st.slug), hasStep(secId, st.name) ? null : h('span', { class: 'visually-hidden' }, ' (' + t('скоро') + ')'), done(secId, st.name) ? h('span', { class: 'tick done', 'aria-label': t('карта.пройдено') }) : null)))));
+        h('span', { class: 'n', 'aria-hidden': 'true' }, i + 1), t('ступень.' + st.slug), hasStep(secId, st.name) ? null : h('span', { class: 'visually-hidden' }, ' (' + t('скоро') + ')'), done(secId, st.slug) ? h('span', { class: 'tick done', 'aria-label': t('карта.пройдено') }) : null)))));
     const ctx = V.newCtx();
     const body = h('article', { class: 'sheet reading prose', lang: file ? (file.meta['язык'] || 'ru') : null });
     if (!file) {
@@ -101,7 +101,7 @@
     if (own && ru && CM.dateKey(ru.meta['редакция']) > CM.dateKey(own.meta['перевод с'])) ml.append(h('span', { class: 'chip warn' }, t('ступень.перевод-устарел')));
     if (V.lang() !== 'ru' && !own) ml.append(h('span', { class: 'chip warn' }, t('ступень.нет-перевода')));
     body.append(ml);
-    if (file.kind === 'questions') body.append(h('h1', {}, t('ступень.proverka')), V.renderProse(file.items, ctx), App.quiz(file, ctx, secId));
+    if (file.kind === 'questions') body.append(h('h1', {}, t('ступень.proverka')), ...V.renderProse(file.items, ctx).filter(Boolean), App.quiz(file, ctx, secId));
     else {
       body.append(...V.renderProse(file.items, ctx, { file, mission: missionCard }).filter(Boolean));
       if (file.kind === 'cases') { const box = h('div', { class: 'ia' }); App.interactives.sort.render(box, ctx, file); body.append(box); }
@@ -112,7 +112,7 @@
     const next = CM.STEPS[CM.STEPS.indexOf(info) + 1];
     if (file.kind !== 'questions' && next) {
       body.append(h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', onclick: () => {
-        App.markDone(secId, info.name); location.hash = secId + '-' + next.slug;
+        App.markDone(secId, info.slug); location.hash = secId + '-' + next.slug;
       } }, t('ступень.готово-дальше', { ступень: t('ступень.' + next.slug) }))));
     }
     body.append(V.sourcesSlot(ctx));
@@ -125,12 +125,14 @@
     if (!C || !W) return null;
     const f = (m, b, k) => ((m.fields[b] || {})[k]) || '';
     const passed = V.collection.has('badges', missionId + ':world:' + W.meta['мир']);
-    return h('aside', { class: 'mission-card', lang: 'ru', 'aria-labelledby': 'mc-' + missionId },
+    // Тексты миссии — русские; подписи и кнопка — на языке интерфейса, поэтому язык указан у каждой части.
+    // «Пройти ещё раз» начинает миссию сначала, а не открывает прежнее заключение.
+    return h('aside', { class: 'mission-card', lang: V.lang(), 'aria-labelledby': 'mc-' + missionId },
       h('p', { class: 'small muted' }, t('миссии.карточка-метка'), ' · ', t('ступень.минут', { n: f(C, 'миссия', 'минут') })),
-      h('h2', { id: 'mc-' + missionId }, f(C, 'миссия', 'название')),
-      h('p', {}, h('strong', {}, f(W, 'мир', 'название')), ' — ', f(W, 'мир', 'кратко')),
+      h('h2', { id: 'mc-' + missionId, lang: 'ru' }, f(C, 'миссия', 'название')),
+      h('p', { lang: 'ru' }, h('strong', {}, f(W, 'мир', 'название')), ' — ', f(W, 'мир', 'кратко')),
       V.lang() !== 'ru' ? h('p', { class: 'small' }, t('миссии.только-русский')) : null,
-      h('p', { class: 'row' }, h('a', { class: 'btn', href: '#missiya-' + missionId }, t(passed ? 'миссии.снова' : 'миссии.начать')),
+      h('p', { class: 'row' }, h('a', { class: 'btn', href: '#missiya-' + missionId, onclick: passed ? App.missionView.reset : null }, t(passed ? 'миссии.снова' : 'миссии.начать')),
         passed ? h('span', { class: 'chip ok' }, t('миссии.пройдена')) : null));
   }
 

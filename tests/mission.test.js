@@ -93,6 +93,24 @@ test('проверка ловит типичные ошибки автора м�
   has('dlinnoe.js', /первое слово секрета — от 2 до 6 букв/);
 });
 
+test('карточки миссии: у каждой свой постоянный код, термин и определение можно править', () => {
+  const common = DIR + '/common.js';
+  const App = loadApp();
+  const cards = local(App.missionText.cardsOf(App.missionText.commonOf(App.missions, 'r11-m01')));
+  assert.ok(cards.length >= 4);
+  for (const c of cards) assert.ok(/^[a-z0-9-]+$/.test(c.code) && c.term && c.text, JSON.stringify(c));
+  assert.equal(new Set(cards.map(c => c.code)).size, cards.length);
+  const texts = src => {
+    const A = loadApp({ [common]: src });
+    return local(A.missionText.validate(A.missions, Model, A.sourceList, { isRoute: A.model.isRoute, sections: A.sectionList })).map(i => i.where + ': ' + i.text);
+  };
+  // Правка термина (опечатка, перевод) кода не меняет — карточка в коллекции остаётся той же.
+  assert.deepEqual(texts(read(common).replace('- gamma | Гамма |', '- gamma | Гамма шифра |')), []);
+  assert.ok(texts(read(common).replace('- gamma | Гамма |', '- Гамма |')).some(t => /карточки: карточка 2: (нужно|код)/.test(t)), 'карточка без кода');
+  assert.ok(texts(read(common).replace('- gamma | Гамма |', '- nonce | Гамма |')).some(t => /код «nonce» уже есть/.test(t)), 'повтор кода');
+  assert.ok(texts(read(common).replace('- gamma | Гамма |', '- Гамма шифра | Гамма |')).some(t => /код — латинские буквы/.test(t)), 'код русским словом');
+});
+
 test('файл миссии с обратной кавычкой не пропадает молча: проверка называет файл', () => {
   const byuro = DIR + '/byuro.js';
   const App = loadApp({ [byuro]: read(byuro).replace('Чай налит, дело на столе.', 'Чай `налит`, дело на столе.') });

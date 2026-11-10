@@ -80,7 +80,8 @@ test('строки интерфейса: каждый ключ из кода е�
     'вопрос.подсказка', 'вопрос.назад', 'вопрос.дальше', 'преподавателю.заголовок', 'преподавателю.текст',
     'проектор.заголовок', 'проектор.текст', 'миссии.начать', 'миссии.снова',
     'миссия.открыть', 'миссия.дальше', 'миссия.защита.опасно', 'миссия.защита.безопасно', 'миссия.награда.получено',
-    'миссия.награда.пока-нет', 'миссия.журнал.как', 'миссия.защита.как', 'миссия.группой.голосование'
+    'миссия.награда.пока-нет', 'миссия.журнал.как', 'миссия.защита.как', 'миссия.группой.голосование',
+    'миссия.шаг3.подсказка2', 'миссия.шаг3.подсказка2-круг'
   ];
   for (const key of built) if (!(key in ru)) missing.push('собранный ключ: ' + key);
   assert.deepEqual(missing, []);
@@ -134,10 +135,142 @@ test('проверка ловит типичные ошибки автора в 
   has(/r11-proverka\.js .*(верн|правильн)/);
 });
 
-test('файл с обратной кавычкой или ${…} не пропадает молча: проверка называет его', () => {
+test('файл с обратной кавычкой не пропадает молча: проверка называет его', () => {
   const f = 'content/ru/r13-prosto.js';
-  const App = loadApp({ [f]: read(f).replace(/\n## /, '\nСлово `в кавычках` и ${x}\n## ') });
+  const App = loadApp({ [f]: read(f).replace(/\n## /, '\nСлово `в кавычках`\n## ') });
   const issues = local(validate(App).issues);
   assert.ok(issues.some(i => i.file === 'ru/r13-prosto.js' && /не загрузился/.test(i.text)), JSON.stringify(issues));
   assert.deepEqual(local(App.model.missingFiles(CONTENT())), ['ru/r13-prosto.js']);
+});
+
+// ---------- Текст — не код ----------
+// Файл содержания — это текст в обёртке: заметки «//», одна строка App.<приём>(String.raw с обратной кавычкой,
+// текст, закрывающая обратная кавычка и «);». То, что стоит в ${…}, браузер выполнил бы как код ещё при
+// загрузке (и проверка страницы увидела бы уже результат), а всё, что вне обёртки, — обычный код. Поэтому
+// смотрим исходный текст файла, а не то, что из него получилось.
+function wrapperProblems(src) {
+  const out = [];
+  const lines = src.replace(/\r\n?/g, '\n').replace(/\n+$/, '').split('\n');
+  let i = 0;
+  while (i < lines.length && (lines[i].startsWith('//') || !lines[i].trim())) i++;
+  if (!/^App\.(content|sections|ui|mission)\(String\.raw`$/.test(lines[i] || '')) out.push('первая строка кода — не App.content(String.raw` (или sections, ui, mission)');
+  if (lines[lines.length - 1] !== '`);') out.push('последняя строка — не `);');
+  if (src.split('`').length - 1 !== 2) out.push('обратных кавычек должно быть ровно две — в первой и последней строке');
+  if (src.includes('${')) out.push('в тексте есть сочетание знаков $ и {');
+  // Для JavaScript эти два знака — тоже перевод строки: после них в заметке «//» начинался бы код.
+  if (/[\u2028\u2029]/.test(src)) out.push('в файле есть разделитель строк U+2028 или U+2029');
+  return out;
+}
+
+test('файлы содержания — только текст в обёртке: нет ${…}, лишних обратных кавычек и кода вне текста', () => {
+  const files = pageScripts().filter(s => s.startsWith('content/'));
+  assert.ok(files.length >= 13, 'проверяется слишком мало файлов: ' + files.length);
+  for (const f of files) assert.deepEqual(wrapperProblems(read(f)), [], f);
+});
+
+test('проверка проверяющего: ${…}, код вне текста и лишняя обратная кавычка в файле содержания ловятся', () => {
+  const good = read('content/ru/r13-prosto.js');
+  assert.deepEqual(wrapperProblems(good), []);
+  const bad = {
+    'имя в ${…}': good.replace(/\n## /, '\nСлово ${name}\n## '),
+    'выражение в ${…}': good.replace(/\n## /, '\nСлово ${App.loaded.length}\n## '),
+    'присваивание в ${…}': good.replace(/\n## /, '\nСлово ${(App.x = 1, "")}\n## '),
+    'код после текста': good.replace(/\);\s*$/, '); App.x = 1;\n'),
+    'код перед текстом': 'App.x = 1;\n' + good,
+    'код в первой строке': good.replace('App.content(String.raw`', 'App.x = 1; App.content(String.raw`'),
+    'обратная кавычка в тексте': good.replace(/\n## /, '\nСлово `в кавычках`\n## '),
+    'другая обёртка': good.replace('App.content(String.raw`', 'App.content(`'),
+    'код в заметке после разделителя строк': '// заметка\u2028App.x = 1;\n' + good
+  };
+  for (const [name, src] of Object.entries(bad)) assert.ok(wrapperProblems(src).length, 'не поймано: ' + name);
+  // Выражение в ${…} страница выполнила бы молча: файл загружается, а проверка страницы ничего не замечает.
+  const f = 'content/ru/r13-prosto.js';
+  const App = loadApp({ [f]: bad['выражение в ${…}'] });
+  assert.deepEqual(App.loadErrors, []);
+  assert.deepEqual(local(validate(App).issues), [], 'если проверка страницы научилась это ловить — обновите пояснения');
+});
+
+test('копия источников для страницы — только данные: один вызов App.sources с записью JSON, адреса — https', () => {
+  const m = read('data/sources.js').replace(/\r\n?/g, '\n').match(/^(?:\/\/[^\n\u2028\u2029]*\n)*App\.sources\(([\s\S]*)\);\n?$/);
+  assert.ok(m, 'data/sources.js должен состоять из заметок «//» и одного вызова App.sources(…)');
+  const list = JSON.parse(m[1]);                      // всё, что не JSON, здесь упадёт
+  assert.deepEqual(list, JSON.parse(read('data/sources.json')));
+  for (const [id, s] of Object.entries(list)) if (s.url) assert.match(s.url, /^https:\/\/[^\s"<>]+$/, id + ': адрес источника — только https://');
+});
+
+// ---------- Постоянные коды ----------
+test('код раздела не зависит от номера: разделы можно переставить, а повтор номера или кода — ошибка', () => {
+  const map = 'content/sections.js';
+  const swapped = read(map).replace(/^номер: 11$/m, 'номер: 111').replace(/^номер: 12$/m, 'номер: 11').replace(/^номер: 111$/m, 'номер: 12');
+  const App = loadApp({ [map]: swapped });
+  assert.deepEqual(local(validate(App).issues), [], 'разделы 11 и 12 поменялись номерами — коды и файлы те же');
+  assert.equal(local(App.sectionList).find(s => s.id === 'r11').no, 12);
+  const texts = src => local(validate(loadApp({ [map]: src })).issues).map(i => i.where + ' | ' + i.text);
+  assert.ok(texts(read(map).replace(/^номер: 12$/m, 'номер: 11')).some(t => /номер 11 уже занят/.test(t)));
+  assert.ok(texts(read(map).replace(/^номер: 12$/m, 'номер: двенадцать')).some(t => /целое число/.test(t)));
+  assert.ok(texts(read(map).replace(/^## r12$/m, '## r11')).some(t => /раздел встречается дважды/.test(t)));
+  assert.ok(texts(read(map).replace(/^## r12$/m, '## раздел12')).some(t => /код раздела/.test(t)));
+});
+
+test('код вопроса: начинается с кода своего раздела и не повторяется', () => {
+  const q = 'content/ru/r11-proverka.js';
+  const texts = src => local(validate(loadApp({ [q]: src })).issues).map(i => i.file + ' | ' + i.where + ' | ' + i.text);
+  assert.ok(texts(read(q).replace('## Вопрос r11-02', '## Вопрос r11-01')).some(t => /r11-proverka\.js .*код вопроса «r11-01» уже есть/.test(t)), 'повтор кода');
+  assert.ok(texts(read(q).replace('## Вопрос r11-02', '## Вопрос r13-02')).some(t => /r11-proverka\.js .*код вопроса — код раздела/.test(t)), 'код чужого раздела');
+  assert.ok(texts(read(q).replace('## Вопрос r11-02', '## Вопрос второй')).some(t => /код вопроса — код раздела/.test(t)), 'код не по образцу');
+  assert.ok(texts(read(q).replace('## Вопрос r11-02', '## Вопрос')).some(t => /у вопроса нет кода/.test(t)), 'вопрос без кода');
+  // Один и тот же код в двух разделах невозможен: код чужого раздела — уже ошибка.
+  const codes = local(loadApp().files).filter(f => f.kind === 'questions').flatMap(f => f.records.map(r => f.meta['язык'] + '|' + r.id));
+  assert.equal(new Set(codes).size, codes.length);
+});
+
+test('заметка «//» в шапке файла — не ключ и не ошибка', () => {
+  const f = 'content/ru/r13-prosto.js';
+  const App = loadApp({ [f]: read(f).replace('---\nраздел: r13', '---\n// заметка для автора\n// статус: готово\nраздел: r13') });
+  assert.deepEqual(local(validate(App).issues), []);
+  const file = local(App.files).find(x => x.src === 'ru/r13-prosto.js');
+  assert.equal(file.meta['статус'], 'черновик');
+  assert.ok(!Object.keys(file.meta).some(k => k.startsWith('//')));
+});
+
+// ---------- Данные на устройстве ----------
+test('хранилище: у данных есть версия схемы, испорченное и незнакомое отбрасывается', () => {
+  const ST = loadApp().storage, LANGS = ['ru', 'kk', 'en'];
+  const read1 = v => local(ST.read(typeof v === 'string' ? v : JSON.stringify(v), LANGS));
+  const empty = { schema: ST.SCHEMA, lang: 'ru', theme: 'auto', group: false, progress: {}, quiz: {}, collection: { cards: [], badges: [] } };
+  for (const junk of [null, '', 'не JSON', '[]', '42', '"строка"', '{"lang":"de","theme":"розовая","group":"да","progress":7,"quiz":[1],"collection":"x"}']) {
+    assert.deepEqual(read1(junk), { newer: false, state: empty }, String(junk));
+  }
+  // Вложенный мусор не роняет страницу: остаются только коды и допустимые значения.
+  const dirty = read1({ lang: 'kk', theme: 'dark', group: true,
+    progress: { r11: 1, r13: { prosto: true, proverka: 'да', 'Плохой ключ': true }, '__proto__': { x: true } },
+    quiz: { r11: 'x', r13: { 'r13-01': 'right', 'r13-02': 'выдумка', 'r13-03': { a: 1 } } },
+    collection: { cards: ['r11-m01:nonce', 'r11-m01:nonce', 7, 'Гамма', '<b>'], badges: 'нет' } });
+  assert.deepEqual(dirty.state, { schema: ST.SCHEMA, lang: 'kk', theme: 'dark', group: true,
+    progress: { r11: {}, r13: { prosto: true } }, quiz: { r11: {}, r13: { 'r13-01': 'right' } },
+    collection: { cards: ['r11-m01:nonce'], badges: [] } });
+  // То, что страница записала, читается обратно без потерь.
+  const saved = { schema: ST.SCHEMA, lang: 'en', theme: 'light', group: false,
+    progress: { r11: { prosto: true, proverka: true, 'missiya-r11-m01': true } }, quiz: { r11: { 'r11-01': 'hint' } },
+    collection: { cards: ['r11-m01:gamma'], badges: ['r11-m01:world:byuro', 'r11-m01:clean'] } };
+  assert.deepEqual(read1(saved), { newer: false, state: saved });
+  // Запись более новой версии учебника не читаем и не перезаписываем.
+  assert.deepEqual(read1(Object.assign({}, saved, { schema: ST.SCHEMA + 1 })), { newer: true, state: empty });
+  assert.equal(ST.KEY, 'kilt:v1');
+  assert.match(read('js/ui.js'), /if \(newer\) return;/, 'запись более новой версии не должна перезаписываться');
+});
+
+test('прогресс и коллекция хранятся по кодам, а не по текстам', () => {
+  const App = loadApp(), CODE = App.storage.CODE;
+  for (const s of local(App.model.STEPS)) assert.match(s.slug, CODE);
+  for (const s of local(App.sectionList)) assert.match(s.id, CODE);
+  for (const f of local(App.files)) for (const q of f.records) if (f.kind === 'questions') assert.match(q.id, CODE, f.src);
+  for (const m of App.missions.filter(x => x.meta['мир'] === 'общий')) {
+    for (const c of local(App.missionText.cardsOf(m))) assert.match(m.meta['миссия'] + ':' + c.code, CODE);
+  }
+  // Код страницы отмечает пройденное кодом ступени или миссии — без русских слов.
+  for (const f of ['js/app.js', 'js/interactives.js', 'js/mission.js']) {
+    for (const m of read(f).matchAll(/markDone\(([^)]*)\)/g)) assert.doesNotMatch(m[1], /[А-Яа-яЁё]/, f + ': ' + m[0]);
+  }
+  assert.doesNotMatch(read('js/mission.js'), /collection\.add\('cards', [^)]*term/, 'карточка в коллекции — по коду, не по термину');
 });

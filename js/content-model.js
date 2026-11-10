@@ -13,11 +13,12 @@
   App.loaded = App.loaded || [];  // какие файлы содержания выполнились (для поиска незагрузившихся)
   App.loadProblems = [];   // ошибки разбора файлов, которые не относятся к ступеням
 
-  // Ступени раздела: название в шапке файла и часть адреса страницы.
+  // Ступени раздела: название в шапке файла и код — часть адреса страницы и ключ прогресса на устройстве.
   const STEPS = [
     { name: 'просто', slug: 'prosto' }, { name: 'попробуй', slug: 'poprobuy' }, { name: 'глубже', slug: 'glubzhe' },
     { name: 'проверка', slug: 'proverka' }, { name: 'дома', slug: 'doma' }, { name: 'преподавателю', slug: 'prepod' }
   ];
+  const SECTION_CODE = /^r\d{1,2}$/;
   const STATUSES = ['черновик', 'готово'];                                   // русский текст
   const TR_STATUSES = ['не проверено носителем', 'проверено носителем'];     // перевод
 
@@ -105,7 +106,8 @@
   App.find = (section, step, lang) => App.files.find(f => f.meta['раздел'] === section &&
     (f.meta['ступень'] || '').toLowerCase() === step && (f.meta['язык'] || 'ru') === lang);
 
-  // Файлы, подключённые к странице, но не выполнившиеся (чаще всего из-за обратной кавычки в тексте).
+  // Файлы, подключённые к странице, но не выполнившиеся (чаще всего из-за обратной кавычки в тексте;
+  // сочетание ${…} файл не останавливает — его ловит тест по исходному тексту).
   function missingFiles(expectedSrcs) {
     const loaded = new Set(App.loaded.concat((App.missions || []).map(m => m.src)));
     return expectedSrcs.map(MK.shortName).filter(s => !loaded.has(s));
@@ -123,18 +125,21 @@
 
     // Незагрузившиеся файлы
     for (const f of missingFiles(o.expected || [])) {
-      issues.push({ level: 'ошибка', file: f, where: 'весь файл', text: 'не загрузился. Чаще всего мешает обратная кавычка или сочетание знаков $ и { в тексте — уберите их.' });
+      issues.push({ level: 'ошибка', file: f, where: 'весь файл', text: 'не загрузился. Чаще всего мешает обратная кавычка в тексте — уберите её.' });
     }
 
-    // Карта разделов
-    const ids = new Set();
+    // Карта разделов. Код раздела (r11) постоянный: по нему раздел находят адреса страниц, файлы ступеней,
+    // вопросы, миссии и прогресс на устройстве. Номер — только место в учебнике, его можно менять.
+    const ids = new Set(), numbers = new Set();
     for (const s of App.sectionList) {
       const add = adder('content/sections.js');
       const where = 'раздел ' + s.id + ' (строка ' + s.line + ')';
-      if (!/^r\d{1,2}$/.test(s.id)) add('ошибка', where, 'код раздела — «r» и номер, например r11');
-      else if (Number(s.id.slice(1)) !== s.no) add('ошибка', where, '«номер:» не совпадает с кодом раздела');
+      if (!SECTION_CODE.test(s.id)) add('ошибка', where, 'код раздела — «r» и одна-две цифры, например r11');
       if (ids.has(s.id)) add('ошибка', where, 'раздел встречается дважды');
       ids.add(s.id);
+      if (!Number.isInteger(s.no) || s.no < 1) add('ошибка', where, '«номер:» — целое число от 1');
+      else if (numbers.has(s.no)) add('ошибка', where, 'номер ' + s.no + ' уже занят другим разделом');
+      numbers.add(s.no);
       if (!s.title) add('ошибка', where, 'нет строки «название:»');
       if (!s.lectures) add('предупреждение', where, 'нет строки «лекции:»');
       for (const k of Object.keys(s.plans)) if (!STEPS.some(st => st.name === k)) add('ошибка', where, 'неизвестная ступень в «план.' + k + ':»');
@@ -142,7 +147,7 @@
     if (App.sectionList.filter(s => s.flagship).length > 1) adder('content/sections.js')('ошибка', 'флагман', 'флагман может быть только один');
 
     // Ступени разделов
-    const seen = new Set();
+    const seen = new Set(), questionCodes = new Set();
     for (const file of App.files) {
       stats.files++;
       const add = adder(file.src);
@@ -180,7 +185,14 @@
       if (file.kind === 'questions') file.records.forEach(q => {
         stats.questions++;
         const where = 'вопрос ' + q.id + ' (строка ' + q.line + ')';
+        // Код вопроса постоянный: по нему хранится ответ на устройстве и находится перевод. Он начинается
+        // с кода своего раздела и не повторяется во всём учебнике (перевод повторяет коды русского текста).
         if (!q.id) add('ошибка', where, 'у вопроса нет кода: «## Вопрос r11-01»');
+        else if (!q.id.startsWith(m['раздел'] + '-') || !/^r\d{1,2}-[a-z0-9]{1,12}$/.test(q.id)) {
+          add('ошибка', where, 'код вопроса — код раздела, дефис и номер, например ' + (m['раздел'] || 'r11') + '-01');
+        }
+        if (q.id && questionCodes.has(lang + '|' + q.id)) add('ошибка', where, 'код вопроса «' + q.id + '» уже есть у другого вопроса');
+        questionCodes.add(lang + '|' + q.id);
         MK.questionProblems(q).forEach(p => add('ошибка', where, p));
         if (!q.hints.length) add('предупреждение', where, 'нет ни одной подсказки');
         if (!q.sources.length) add('ошибка', where, 'нет строки «источники:»');
