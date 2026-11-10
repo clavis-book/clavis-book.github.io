@@ -76,6 +76,9 @@ class DataIntegrityTest(unittest.TestCase):
                 self.assertIsInstance(source.get("verified"), bool)
                 if source.get("kind") == "lecture":
                     self.assertTrue(source.get("file", "").endswith(".docx"))
+                elif source.get("kind") == "project":
+                    # Документ самого проекта (например, README.md): файл должен быть в корне проекта.
+                    self.assertTrue((DATA_DIR.parent / source.get("file", "-")).is_file(), source.get("file"))
                 else:
                     self.assertTrue(source.get("url", "").startswith("https://"))
 

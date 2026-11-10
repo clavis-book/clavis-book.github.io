@@ -1,0 +1,225 @@
+/* Экран игровой миссии (js/mission.js). Всё — внутри .mission, чтобы не задевать оформление учебника.
+   Замысел страницы: дело в папке. Одна колонка для чтения; у мира свой второй цвет (у бюро — сургуч) —
+   только для героев, печати и линии под заголовком. Зелёный остаётся цветом действия.
+   Главная деталь — лента гаммы: столбики букв, где открывается секрет. Шрифты и цвета — в base.css. */
+
+.mission { --world: var(--green); --world-soft: var(--green-soft); }
+.mission.w-byuro { --world: #8E3B2E; --world-soft: #F3E1DC; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mission.w-byuro { --world: #E39A86; --world-soft: #3A2420; }
+}
+:root[data-theme="dark"] .mission.w-byuro { --world: #E39A86; --world-soft: #3A2420; }
+.mission p { margin: 0; }
+.mission h1:focus, .mission h2:focus, .mission h3:focus { outline: none; }
+.mission .page { max-width: 52rem; margin: 0 auto; display: grid; gap: 1.4rem; }
+.mission .stage { display: grid; gap: 1.1rem; min-width: 0; }
+.mission .proto { border: 1px dashed var(--ochre); color: var(--ochre); background: var(--ochre-soft); border-radius: var(--r); padding: .55rem .8rem; font-size: .9rem; }
+.mission .lead { font-size: 1.1rem; max-width: 40rem; }
+.mission .task { font-weight: 700; }
+.mission .note-small, .mission .fiction { font-size: .88rem; color: var(--ink-2); }
+.mission .fiction { border-top: 1px solid var(--rule); padding-top: .7rem; }
+.mission .row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+
+.mission .btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; padding: .6rem 1rem; min-height: 2.75rem; border-radius: var(--r);
+  border: 1px solid var(--green); background: var(--green); color: var(--green-ink); cursor: pointer; text-decoration: none; font-weight: 700; font-size: 1rem; }
+.mission .btn.ghost { background: transparent; color: var(--green); }
+.mission .btn.next { justify-self: start; }
+.mission .chip { display: inline-block; padding: .05rem .55rem; border-radius: 999px; font-size: .85rem; border: 1px solid var(--rule); }
+.mission .chip.ok { border-color: var(--green); color: var(--green); background: var(--green-soft); }
+.mission .chip.bad { border-color: var(--red); color: var(--red); background: var(--red-soft); }
+
+/* ---------- Выбор мира ---------- */
+.mission .case-head { display: grid; gap: .5rem; padding-bottom: .9rem; border-bottom: 2px solid var(--world); }
+.mission .world-name { font-family: var(--display); font-style: italic; color: var(--world); font-size: 1rem; }
+.mission .world-name span { color: var(--ink-2); }
+.mission .track { margin: .2rem 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: .3rem; counter-reset: st; }
+.mission .track li { counter-increment: st; font-size: .8rem; line-height: 1.25; color: var(--ink-2); border-top: 3px solid var(--rule); padding-top: .3rem; min-width: 0; overflow-wrap: anywhere; }
+.mission .track li::before { content: counter(st) " "; font-family: var(--display); font-weight: 600; }
+.mission .track li.done { border-top-color: var(--green); }
+.mission .track li.now { border-top-color: var(--world); color: var(--ink); font-weight: 700; }
+
+/* ---------- Реплики: как в пьесе, с монограммой героя ---------- */
+.mission .dialog { display: grid; gap: .7rem; }
+.mission .say { display: grid; grid-template-columns: 2.3rem 1fr; gap: .7rem; align-items: start; }
+.mission .av { width: 2.3rem; height: 2.3rem; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-weight: 600; font-size: 1.1rem;
+  border: 2px solid currentColor; background: var(--sheet); }
+.mission .who-0 .av { color: var(--world); } .who-1 .av { color: var(--green); } .who-2 .av { color: var(--ochre); }
+.mission .line { font-family: var(--display); font-size: 1.04rem; line-height: 1.55; padding-top: .2rem; min-width: 0; }
+.mission .line .name { font-style: italic; font-weight: 600; }
+.mission .who-0 .name { color: var(--world); } .who-1 .name { color: var(--green); } .who-2 .name { color: var(--ochre); }
+.mission .goals { margin: .2rem 0 0; padding: .8rem 1rem .8rem 2.2rem; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); display: grid; gap: .3rem; }
+.mission .goals li::marker { color: var(--world); }
+
+.mission .callout { display: grid; grid-template-columns: 6.6rem 1fr; gap: .2rem 1rem; padding: .8rem 0; border-top: 1px solid var(--green); border-bottom: 1px solid var(--green); }
+.mission .callout .lab { font-family: var(--display); font-style: italic; color: var(--green); }
+.mission .callout .txt { font-family: var(--display); line-height: 1.6; display: grid; gap: .6rem; }
+@media (max-width: 34rem) { .mission .callout { grid-template-columns: 1fr; } }
+
+/* ---------- Устройство полигона ---------- */
+.mission .device { display: grid; gap: .8rem; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); padding: clamp(.9rem, 3vw, 1.3rem); }
+.mission .scheme { margin: 0; display: grid; gap: .7rem; }
+.mission .eq { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+.mission .tag { font-family: var(--mono); font-size: .88rem; border: 1px solid var(--rule); border-radius: var(--r); padding: .15rem .45rem; background: var(--paper); }
+.mission .tag.g { border-color: var(--ochre); color: var(--ochre); }
+.mission .op { font-weight: 700; color: var(--ink-2); }
+.mission .cols { display: flex; gap: .4rem; }
+.mission .excol { display: grid; grid-template-rows: repeat(3, 1.7rem); width: 2.4rem; text-align: center; font-family: var(--mono); border: 1px solid var(--rule); border-radius: var(--r); background: var(--paper); align-items: center; }
+.mission .excol .p { color: var(--green); } .excol .s { color: var(--ochre); font-size: .82rem; } .excol .c { color: var(--ink-2); }
+.mission .scheme figcaption { font-size: .88rem; color: var(--ink-2); }
+
+/* ---------- Журнал эфира ---------- */
+.mission .picked { font-size: .9rem; color: var(--ink-2); }
+.mission .log { display: grid; gap: .3rem; }
+.mission .log-head, .mission .msg { display: grid; grid-template-columns: 2rem 3.6rem 2.8rem minmax(0, 1fr); gap: .5rem; align-items: center; }
+.mission .log-head { font-size: .78rem; color: var(--ink-2); padding: 0 .65rem; }
+.mission .msg { text-align: left; width: 100%; min-height: 2.9rem; padding: .35rem .65rem; border: 1px solid var(--rule); border-radius: var(--r); background: var(--sheet); cursor: pointer; }
+.mission .msg .no { font-family: var(--display); font-weight: 600; color: var(--ink-2); }
+.mission .msg .mark { font-size: .85rem; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mission .msg .iv { font-family: var(--mono); font-size: 1.15rem; font-weight: 700; text-align: center; border-radius: 4px; }
+.mission .msg .ct { font-family: var(--mono); font-size: .9rem; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: .04em; }
+.mission .msg[aria-pressed="true"] { border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); background: var(--green-soft); }
+.mission .msg.pair { border-color: var(--world); box-shadow: inset 0 0 0 1px var(--world); background: var(--world-soft); }
+.mission .msg.pair .iv { color: var(--world); }
+/* Пара найдена — остальные сообщения неактивны: пунктир и прозрачный фон. Прозрачность текста не берём —
+   с ней цифры и шифровки теряли контраст AA. */
+.mission .msg[aria-disabled="true"]:not(.pair) { background: transparent; border-style: dashed; cursor: default; }
+.mission .hint-iv .iv { background: var(--ochre-soft); outline: 1px dashed var(--ochre); }
+.mission .feedback { display: grid; gap: .7rem; scroll-margin-top: 1rem; }
+.mission .feedback:empty { display: none; }
+.mission .feedback.ok, .mission .feedback.bad { padding: .9rem 1rem; border-radius: var(--r); background: var(--sheet); border: 1px solid var(--rule); }
+.mission .feedback.ok { border-left: 0; border-color: var(--green); }
+.mission .feedback.bad { border-color: var(--red); }
+.mission .verdict { font-weight: 700; }
+.mission .verdict.ok { color: var(--green); } .verdict.bad { color: var(--red); }
+.mission .fact { font-size: .95rem; }
+.mission .hint { font-size: .95rem; border: 1px dashed var(--ochre); background: var(--ochre-soft); border-radius: var(--r); padding: .45rem .7rem; }
+
+/* ---------- Лента гаммы ---------- */
+.mission .legend { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: .25rem 1rem; font-size: .85rem; color: var(--ink-2); }
+.mission .legend li { display: flex; align-items: center; gap: .35rem; }
+/* Метки легенды — полоски, а не квадратики: квадратик читается как флажок, который надо нажать. */
+.mission .legend li::before { content: ""; width: 1.2rem; height: .45rem; border-radius: 2px; border: 1px solid var(--rule); }
+.mission .legend .r1::before, .mission .legend .r4::before { background: var(--ink-2); border-color: var(--ink-2); }
+.mission .legend .r2::before { background: var(--green-soft); border-color: var(--green); }
+.mission .legend .r3::before { background: var(--ochre-soft); border-color: var(--ochre); }
+.mission .legend .r5::before { background: var(--world-soft); border-color: var(--world); }
+.mission .strip { display: flex; flex-wrap: wrap; gap: .7rem .55rem; padding: .8rem; background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); }
+.mission .word { display: flex; gap: 2px; }
+.mission .strip-more { display: none; }
+.mission .col { display: grid; grid-template-rows: repeat(5, 1.75rem); width: 1.6rem; border-radius: 4px; }
+.mission .col.focus { outline: 2px solid var(--green); outline-offset: 2px; }
+.mission .cell { display: grid; place-items: center; font-family: var(--mono); font-size: .98rem; line-height: 1; }
+.mission .cell.r1, .mission .cell.r4 { color: var(--ink-2); }
+.mission .cell.r2 { color: var(--green); font-weight: 700; background: var(--green-soft); }
+.mission .cell.r3 { color: var(--ochre); font-size: .72rem; background: var(--ochre-soft); }
+.mission .cell.r4 { border-top: 1px dashed var(--rule); }
+.mission .cell.r5 { color: var(--world); font-weight: 700; }
+.mission .cell.r5.open, .mission .cell.r5.got { background: var(--world-soft); }
+.mission .cell.got { box-shadow: inset 0 0 0 2px var(--green); }
+@media (prefers-reduced-motion: no-preference) { .mission .cell.r5.open { animation: drop .35s ease-out; } }
+@keyframes drop { from { transform: translateY(-.35rem); opacity: 0; } to { transform: none; opacity: 1; } }
+.mission .qbox { display: grid; gap: .7rem; }
+.mission .opts { display: grid; gap: .45rem; }
+/* display: block — у вопросов «Проверь себя» .opt — сетка (кружок и текст); кнопке миссии сетка не нужна. */
+.mission .opt { display: block; width: 100%; text-align: left; padding: .65rem .85rem; min-height: 2.75rem; border: 1px solid var(--rule); border-radius: var(--r); background: var(--sheet); cursor: pointer; font-size: 1rem; }
+.mission .opt:hover:not([aria-disabled="true"]) { border-color: var(--green); }
+.mission .opt.right { border-color: var(--green); background: var(--green-soft); font-weight: 700; }
+.mission .opt.wrong { border-color: var(--red); background: var(--red-soft); text-decoration: line-through; }
+.mission .opt[aria-disabled="true"] { cursor: default; }
+.mission .secret { font-family: var(--mono); font-size: clamp(1.05rem, 3.6vw, 1.35rem); font-weight: 700; color: var(--world); background: var(--world-soft);
+  border: 1px dashed var(--world); border-radius: var(--r); padding: .6rem .8rem; letter-spacing: .04em; overflow-wrap: anywhere; }
+.mission .ruler { display: grid; grid-template-columns: repeat(auto-fill, minmax(1.75rem, 1fr)); gap: 2px; padding: .5rem; border: 1px solid var(--rule); border-radius: var(--r); background: var(--sheet); }
+.mission .rc { display: grid; text-align: center; padding: .15rem 0; border-radius: 3px; }
+.mission .rc b { font-family: var(--mono); font-weight: 400; font-size: .95rem; }
+.mission .rc small { font-size: .68rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.mission .rc.on { background: var(--green); color: var(--green-ink); }
+.mission .rc.on small { color: var(--green-ink); }
+
+/* ---------- Защита ---------- */
+.mission .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: .5rem; }
+.mission .rule { display: grid; gap: .25rem; text-align: left; padding: .7rem .85rem; border: 1px solid var(--rule); border-radius: var(--r); background: var(--sheet); cursor: pointer; min-height: 4.2rem; }
+.mission .rule .rl { font-size: .98rem; }
+.mission .rule .rs { font-size: .82rem; color: var(--ink-2); }
+.mission .rule.ok .rs { color: var(--green); font-weight: 700; } .rule.bad .rs { color: var(--red); font-weight: 700; }
+.mission .rule[aria-pressed="true"] { border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
+.mission .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+.mission .stats p { display: grid; gap: .1rem; border-top: 1px solid var(--rule); padding-top: .35rem; }
+.mission .stats b { font-family: var(--display); font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.mission .stats b.chip { font-family: var(--body); font-size: .9rem; justify-self: start; }
+.mission .stats span { font-size: .8rem; color: var(--ink-2); }
+.mission .rug { display: grid; grid-template-columns: repeat(100, minmax(0, 1fr)); gap: 1px; height: 1.6rem; background: var(--rule); border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
+.mission .rug span { background: var(--sheet); }
+.mission .rug span.hit { background: var(--red); }
+.mission .rug-axis { display: flex; justify-content: space-between; font-size: .75rem; color: var(--ink-2); font-variant-numeric: tabular-nums; margin-top: -.5rem; }
+.mission .riddle { display: grid; gap: .7rem; }
+.mission .riddle:empty { display: none; }
+.mission .riddle { border-top: 2px solid var(--world); padding-top: 1rem; }
+.mission .q-stem { font-weight: 700; }
+
+/* ---------- Заключение ---------- */
+.mission .stamp { justify-self: start; display: grid; place-items: center; width: 10.5rem; height: 10.5rem; border-radius: 50%; padding: 1.2rem;
+  border: 3px double var(--world); color: var(--world); text-align: center; font-family: var(--display); font-style: italic; font-weight: 600; line-height: 1.25;
+  transform: rotate(-7deg); background: var(--world-soft); }
+@media (prefers-reduced-motion: no-preference) { .mission .stamp { animation: stamp .5s cubic-bezier(.2, 1.4, .4, 1) both; } }
+@keyframes stamp { from { transform: rotate(-16deg) scale(1.35); opacity: 0; } to { transform: rotate(-7deg) scale(1); opacity: 1; } }
+.mission .deb { display: grid; gap: .7rem; }
+.mission .deb > p { max-width: 42rem; }
+.mission .facts { margin: 0; padding-left: 1.2rem; display: grid; gap: .55rem; max-width: 42rem; }
+.mission .facts li::marker { color: var(--green); }
+.mission .timeline .facts { list-style: none; padding-left: 0; border-left: 2px solid var(--world); }
+.mission .timeline .facts li { padding-left: 1rem; position: relative; }
+.mission .timeline .facts li::before { content: ""; position: absolute; left: -.42rem; top: .45rem; width: .7rem; height: .7rem; border-radius: 50%; background: var(--world); }
+.mission .callout.honest { border-color: var(--ochre); }
+.mission .callout.honest .lab { color: var(--ochre); }
+.mission .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: .7rem; }
+.mission .term { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); padding: .8rem .9rem; display: grid; gap: .35rem;
+  background-image: linear-gradient(transparent 1.55rem, var(--rule) 1.55rem, var(--rule) calc(1.55rem + 1px), transparent calc(1.55rem + 1px)); }
+.mission .term h3 { font-size: 1rem; }
+.mission .term p { font-size: .93rem; }
+.mission .badges { margin: 0; padding: 0; list-style: none; display: grid; gap: .35rem; }
+.mission .badges li { color: var(--ink-2); }
+.mission .badges li b { color: var(--ink-2); }
+.mission .badges li.got b { color: var(--world); }
+.mission .badges li.got::before { content: "✓ "; color: var(--green); font-weight: 700; }
+.mission .badges li:not(.got)::before { content: "○ "; }
+
+/* ---------- Источники ---------- */
+.mission .cite { font-size: .72em; vertical-align: super; line-height: 0; margin-left: .08em; }
+.mission .cite button { border: 0; background: none; color: var(--green); padding: 0 .1em; cursor: pointer; font-weight: 700; min-width: 1.2rem; }
+.mission .check { font-size: .78rem; padding: 0 .35rem; border-radius: 3px; background: var(--ochre-soft); color: var(--ochre); border: 1px solid var(--ochre); }
+.mission .sources { font-size: .86rem; color: var(--ink-2); border-top: 1px solid var(--rule); padding-top: .7rem; display: grid; gap: .3rem; }
+.mission .sources h3 { font-size: .95rem; color: var(--ink); }
+.mission .sources ol { margin: 0; padding-left: 1.4rem; display: grid; gap: .3rem; }
+.mission .sources li { overflow-wrap: anywhere; border-radius: 3px; }
+.mission .sources li.flash { background: var(--green-soft); }
+.mission .src-more { margin-top: .15rem; }
+.mission .src-more summary { cursor: pointer; color: var(--green); width: fit-content; }
+.mission .src-more p { margin-top: .25rem; }
+@media (prefers-reduced-motion: no-preference) { .mission .sources li { transition: background-color .6s; } }
+
+@media (max-width: 30rem) {
+  /* На телефоне у этапов только номера, название — у текущего: длинные слова не рвутся посередине. */
+  .mission .track { display: flex; }
+  .mission .track li { flex: 0 0 1.7rem; font-size: .8rem; overflow-wrap: normal; }
+  .mission .track li.now { flex: 1 1 auto; }
+  .mission .track li:not(.now) .tn { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .mission .strip.pre .word:not(:first-child) { display: none; }
+  .mission .strip.pre .strip-more { display: block; flex-basis: 100%; font-size: .85rem; color: var(--ink-2); }
+  .mission .stats b { font-size: 1.1rem; }
+  .mission .log-head, .mission .msg { grid-template-columns: 1.6rem 3.1rem 2.5rem minmax(0, 1fr); gap: .4rem; }
+}
+
+/* ---------- Режим «Группой»: у вариантов буквы для голосования (крупный шрифт — в base.css) ---------- */
+.group .mission .page { max-width: 64rem; }
+.group .mission .opt[data-letter]::before, .group .mission .rule[data-letter]::before {
+  content: attr(data-letter); display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; margin-right: .6rem; border-radius: 50%;
+  background: var(--world); color: var(--sheet); font-family: var(--display); font-weight: 600; text-decoration: none; }
+.group .mission .rule[data-letter]::before { margin-bottom: .2rem; }
+.group .mission .cell { font-size: 1.15rem; }
+.group .mission .col { width: 1.9rem; grid-template-rows: repeat(5, 2rem); }
+/* Линейка — кнопки: на шаге «дочитай слово» она служит клавиатурой. */
+.mission button.rc { font: inherit; color: inherit; cursor: default; border: 1px solid transparent; background: none; min-height: 2.5rem; }
+.mission button.rc:disabled { opacity: 1; }
+.mission .ruler.keys button.rc { cursor: pointer; }
+.mission .ruler.keys button.rc:hover { border-color: var(--green); }
+.mission .word-read { font-family: var(--mono); letter-spacing: .08em; }

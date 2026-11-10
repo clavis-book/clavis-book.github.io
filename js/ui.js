@@ -1,0 +1,224 @@
+// Общие части страницы: хранилище на устройстве, строки интерфейса, построение страницы из узлов
+// (без вставки HTML-строк), строчная разметка и источники, выноски, верхняя полоса, тема и режим «Группой».
+// Тексты учебника — недоверенные данные: они попадают на страницу только как текст узлов.
+(function () {
+  'use strict';
+  const App = window.App, MK = App.markup;
+  const KEY = 'kilt:v1';
+  const LOCALES = { ru: 'ru-RU', kk: 'kk-KZ', en: 'en-US' };
+  const THEMES = ['auto', 'light', 'dark'];
+
+  // ---------- Хранилище на устройстве ----------
+  // Только настройки, прогресс, ответы самопроверки и коллекция карточек и наград — без имени.
+  // Если хранилище недоступно (приватный режим, запрет браузера), всё работает без сохранения.
+  const plain = v => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+  const strings = v => (Array.isArray(v) ? v.filter(x => typeof x === 'string').slice(0, 500) : []);
+  const store = (() => {
+    let s = {};
+    try { s = plain(JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { s = {}; }
+    if (!MK.LANGS.includes(s.lang)) s.lang = 'ru';
+    if (!THEMES.includes(s.theme)) s.theme = 'auto';
+    s.group = s.group === true;
+    s.progress = plain(s.progress);
+    s.quiz = plain(s.quiz);
+    s.collection = plain(s.collection);
+    s.collection.cards = strings(s.collection.cards);
+    s.collection.badges = strings(s.collection.badges);
+    return { s, save() { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* хранилище недоступно */ } } };
+  })();
+  const S = store.s;
+
+  // ---------- Узлы страницы ----------
+  function h(tag, attrs, ...kids) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v == null || v === false) continue;
+      if (k === 'class') el.className = v;
+      else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? '' : v);
+    }
+    for (const kid of kids.flat(Infinity)) if (kid != null && kid !== false) el.append(kid.nodeType ? kid : String(kid));
+    return el;
+  }
+  // Заменить содержимое элемента: пустое (null, false) пропускается, вложенные списки раскрываются.
+  // Обычный replaceChildren превратил бы null в текст «null», а список — в строку.
+  const fill = (el, ...kids) => el.replaceChildren(...kids.flat(Infinity).filter(k => k != null && k !== false));
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function svg(tag, attrs, ...kids) {
+    const el = document.createElementNS(SVG_NS, tag);
+    for (const [k, v] of Object.entries(attrs || {})) if (v != null) el.setAttribute(k, v);
+    for (const kid of kids.flat(Infinity)) if (kid != null) el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    return el;
+  }
+
+  // ---------- Строки интерфейса ----------
+  const lang = () => S.lang;
+  function raw(key) {
+    const own = App.uiStrings[lang()], ru = App.uiStrings.ru;
+    if (own && key in own.strings) return own.strings[key];
+    if (ru && key in ru.strings) return ru.strings[key];
+    return null;
+  }
+  // t('ключ', { имя: значение }) — строка на выбранном языке; если перевода нет — русская.
+  function t(key, params) {
+    const s = raw(key);
+    if (s == null) return '[' + key + ']';
+    return s.replace(/\{([^}]+)\}/g, (m, k) => (params && k in params ? String(params[k]) : m));
+  }
+  // Формы слова через черту: по-русски «слово|слова|слов», по-казахски и по-английски «форма|формы».
+  function plural(key, n) {
+    const forms = t(key).split('|').map(x => x.trim());
+    const cat = new Intl.PluralRules(LOCALES[lang()]).select(n);
+    const i = forms.length >= 3 ? ({ one: 0, few: 1 }[cat] ?? 2) : (cat === 'one' ? 0 : 1);
+    return forms[Math.min(i, forms.length - 1)];
+  }
+  // Строка с выделенными местами: {имя} заменяется значением жирным шрифтом.
+  function rich(key, params) {
+    return t(key).split(/(\{[^}]+\})/).map(part => {
+      const m = part.match(/^\{([^}]+)\}$/);
+      return m && params && m[1] in params ? h('strong', {}, String(params[m[1]])) : part;
+    });
+  }
+  const num = (n, l) => new Intl.NumberFormat(LOCALES[l || lang()]).format(n);
+  const locale = () => LOCALES[lang()];
+
+  // ---------- Строчная разметка и источники ----------
+  const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let ctxCount = 0;
+  // Контекст ссылок одного экрана: номера источников и место для их списка.
+  const newCtx = () => ({ cites: [], prefix: 'src' + (++ctxCount) + '-', slot: null });
+
+  function inline(text, ctx) {
+    return MK.inlineTokens(text).map(tok => {
+      if (tok.t === 'text') return tok.text;
+      if (tok.t === 'b') return h('strong', {}, tok.text);
+      if (tok.t === 'i') return h('em', {}, tok.text);
+      if (tok.t === 'cite') return cite(tok.id, tok.loc, ctx);
+      if (tok.t === 'check') return h('span', { class: 'check', title: tok.what ? t('ист.что-сверить', { что: tok.what }) : t('ист.не-сверено') }, t('ист.проверить'));
+      if (tok.href[0] === '#') return h('a', { href: tok.href }, tok.text);
+      return h('a', { href: tok.href, target: '_blank', rel: 'noopener noreferrer' }, tok.text, h('span', { class: 'ext', 'aria-label': t('ссылка.наружу') }, '↗'));
+    });
+  }
+  function cite(id, loc, ctx) {
+    if (!ctx) return '';
+    let n = ctx.cites.findIndex(c => c.id === id);
+    if (n < 0) { ctx.cites.push({ id, locs: [] }); n = ctx.cites.length - 1; }
+    if (loc && !ctx.cites[n].locs.includes(loc)) ctx.cites[n].locs.push(loc);
+    const src = App.sourceList[id], no = n + 1;
+    return h('sup', { class: 'cite' },
+      h('button', { type: 'button', 'aria-label': t('ист.номер', { n: no }) + (src ? ': ' + src.label : ''), onclick: () => {
+        const li = document.getElementById(ctx.prefix + no);
+        if (!li) return;
+        li.scrollIntoView({ block: 'center', behavior: reduceMotion() ? 'auto' : 'smooth' });
+        li.classList.remove('flash'); void li.offsetWidth; li.classList.add('flash');
+      } }, String(no)),
+      src && !src.verified ? h('span', { class: 'check' }, t('ист.проверить')) : null);
+  }
+  // Список источников экрана: название (ссылкой, если есть адрес), места, дата сверки; по нажатию —
+  // что именно сверено.
+  function sourcesBlock(ctx, title) {
+    if (!ctx || !ctx.cites.length) return null;
+    return h('section', { class: 'sources', 'aria-label': title || t('ист.заголовок') },
+      h('h2', { class: 'sources-h' }, title || t('ист.заголовок')),
+      h('ol', {}, ctx.cites.map((c, i) => {
+        const s = App.sourceList[c.id];
+        if (!s) return h('li', { id: ctx.prefix + (i + 1) }, t('ист.нет', { код: c.id }));
+        const name = s.title || s.label;
+        const what = [s.section, s.note].filter(Boolean).join(' ');
+        return h('li', { id: ctx.prefix + (i + 1), lang: 'ru' },
+          s.url ? h('a', { href: s.url, target: '_blank', rel: 'noopener noreferrer' }, name) : name,
+          s.file ? h('span', { class: 'src-note' }, ' (' + s.file + ')') : '',
+          c.locs.length ? ', ' + c.locs.join('; ') : '',
+          s.checked ? h('span', { class: 'src-note' }, ' — ' + t('ист.сверено', { когда: s.checked })) : '',
+          s.verified ? '' : h('span', { class: 'check' }, t('ист.проверить')),
+          what ? h('details', { class: 'src-more' }, h('summary', {}, t('ист.что-сверено')), h('p', { class: 'src-note' }, what)) : null);
+      })));
+  }
+  // Место для списка источников, который пополняется по ходу (вопросы, интерактивы).
+  function sourcesSlot(ctx, title) {
+    ctx.slot = h('div', { class: 'sources-slot' });
+    ctx.slotTitle = title;
+    refreshSources(ctx);
+    return ctx.slot;
+  }
+  function refreshSources(ctx) { if (ctx && ctx.slot) ctx.slot.replaceChildren(sourcesBlock(ctx, ctx.slotTitle) || ''); }
+
+  // ---------- Выноски и обычный текст ----------
+  function callout(kind, label, kids) {
+    return h('aside', { class: 'callout ' + kind }, h('span', { class: 'lab' }, label || t('выноска.заметка')), h('div', { class: 'txt' }, kids));
+  }
+  // opts.say(элемент) — реплика героя (в миссиях); opts.mission(код) — карточка миссии;
+  // opts.file — файл ступени (для интерактивов, которые наполняет текст); opts.ulClass — класс списка.
+  function renderProse(items, ctx, opts) {
+    const o = opts || {};
+    return items.map(it => {
+      if (it.type === 'h1' || it.type === 'h2' || it.type === 'h3') return h(it.type, {}, inline(it.text, ctx));
+      if (it.type === 'p') return h('p', {}, inline(it.text, ctx));
+      if (it.type === 'ul') return h('ul', { class: o.ulClass || null }, it.items.map(x => h('li', {}, inline(x, ctx))));
+      // Метка выноски стоит отдельно («Важно», «Аналогия»), поэтому текст после неё начинается с заглавной буквы.
+      if (it.type === 'callout') return callout(it.kind, it.label, h('p', {}, inline(it.text.replace(/^([*«"(]*)(\p{Ll})/u, (m, a, b) => a + b.toLocaleUpperCase('ru')), ctx)));
+      if (it.type === 'say') return o.say ? o.say(it, ctx) : h('p', {}, it.who + ': ', inline(it.text, ctx));
+      if (it.type === 'mission') return o.mission ? o.mission(it.id) : null;
+      if (it.type === 'interactive') {
+        const box = h('div', { class: 'ia' });
+        const ia = App.interactives && App.interactives[it.id];
+        if (ia) ia.render(box, ctx, o.file); else box.append(t('интерактив.нет', { имя: it.id }));
+        return box;
+      }
+      return null;
+    });
+  }
+
+  // ---------- Тема, язык, «Группой» ----------
+  function applyPrefs() {
+    const root = document.documentElement;
+    if (S.theme === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', S.theme);
+    root.classList.toggle('group', S.group);
+    root.lang = lang();
+  }
+  const view = { onChange: null };
+  // Шапка строится заново, поэтому фокус клавиатуры возвращается на ту же кнопку (data-focus), а не теряется.
+  function setPref(k, v) {
+    const was = document.activeElement && document.activeElement.closest('#top') ? document.activeElement.getAttribute('data-focus') : null;
+    S[k] = v; store.save(); applyPrefs(); renderTop(); if (view.onChange) view.onChange(k);
+    const again = was && [...document.querySelectorAll('#top [data-focus]')].find(el => el.getAttribute('data-focus') === was);
+    if (again) again.focus();
+  }
+
+  // Верхняя полоса: название, разделы приложения, язык, тема, «Группой».
+  function renderTop(current) {
+    if (current !== undefined) view.area = current;
+    const area = view.area;
+    const link = (href, key) => h('a', { href: '#' + href, 'aria-current': area === href ? 'page' : null }, t(key));
+    const nextTheme = { auto: 'light', light: 'dark', dark: 'auto' };
+    fill(document.getElementById('top'),
+      h('a', { class: 'skip', href: '#app', onclick: ev => { ev.preventDefault(); const m = document.getElementById('app'); m.focus(); m.scrollIntoView(); } }, t('шапка.к-содержанию')),
+      h('div', { class: 'top-in' },
+        h('a', { class: 'brand', href: '#' }, t('название'), h('small', {}, t('подзаголовок'))),
+        h('nav', { class: 'nav', 'aria-label': t('шапка.меню') },
+          link('karta', 'шапка.студенту'), link('prepodavatelyu', 'шапка.преподавателю'), link('proektor', 'шапка.проектор')),
+        h('div', { class: 'tools' },
+          h('div', { class: 'seg', role: 'group', 'aria-label': t('шапка.язык') }, [['ru', 'RU'], ['kk', 'ҚАЗ'], ['en', 'EN']].map(([l, n]) =>
+            h('button', { type: 'button', lang: l, 'data-focus': 'lang-' + l, 'aria-pressed': lang() === l ? 'true' : 'false', 'aria-label': { ru: 'Русский', kk: 'Қазақша', en: 'English' }[l], onclick: () => setPref('lang', l) }, n))),
+          h('button', { type: 'button', class: 'tool', 'data-focus': 'theme', onclick: () => setPref('theme', nextTheme[S.theme]) }, t('шапка.тема.' + S.theme)),
+          h('button', { type: 'button', class: 'tool', 'data-focus': 'group', 'aria-pressed': S.group ? 'true' : 'false', title: t('шапка.группой.пояснение'), onclick: () => setPref('group', !S.group) }, t('шапка.группой')))),
+      lang() !== 'ru' ? h('p', { class: 'draft-lang' }, t('шапка.черновой-перевод')) : null);
+  }
+
+  // Фокус на заголовок нового экрана: читалка экрана объявит, куда перешли.
+  function focusTitle(container) {
+    const el = (container || document).querySelector('h1');
+    if (el) { el.setAttribute('tabindex', '-1'); el.focus({ preventScroll: true }); }
+  }
+
+  // ---------- Коллекция карточек и наград (общая для всего учебника, только на устройстве) ----------
+  const collection = {
+    add(kind, id) { const list = S.collection[kind]; if (list && !list.includes(id)) { list.push(id); store.save(); return true; } return false; },
+    has: (kind, id) => (S.collection[kind] || []).includes(id),
+    count: kind => (S.collection[kind] || []).length
+  };
+
+  Object.assign(view, { S, store, h, fill, svg, t, rich, plural, num, locale, lang, newCtx, inline, cite, sourcesBlock, sourcesSlot, refreshSources,
+    callout, renderProse, applyPrefs, renderTop, setPref, focusTitle, collection, reduceMotion });
+  App.view = view;
+})();

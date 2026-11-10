@@ -21,19 +21,19 @@
     "label": "IEEE 802.11-2020 §12.2.1",
     "title": "Ответ рабочей группы IEEE 802.11 на комментарии к P802.11-2020 (цитата §12.2.1)",
     "url": "https://www.ieee802.org/11/Liaisons/2022-08-11-response-to-FDIS%20comments%20on%20P802.11-2020.pdf",
-    "section": "§12.2.1: «WEP is obsolete. The WEP algorithm is unsuitable for the purposes of this standard»; TKIP — deprecated",
+    "section": "§12.2.1: «WEP is obsolete. The WEP algorithm is unsuitable for the purposes of this standard»; TKIP — deprecated. Сверено 09.11.2026: ответ рабочей группы IEEE 802.11 на замечания к FDIS 8802-11 (2022), замечание CN11 с цитатой §12.2.1 принято; «WEP and TKIP must not be used» — WEP объявлен устаревшим, TKIP — нерекомендуемым",
     "primary": true,
     "verified": true,
-    "checked": "26.10.2026"
+    "checked": "26.10.2026; 09.11.2026"
   },
   "nist_800_97": {
     "label": "NIST SP 800-97",
     "title": "NIST SP 800-97. Establishing Wireless Robust Security Networks: A Guide to IEEE 802.11i (2007, архивный)",
     "url": "https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-97.pdf",
-    "section": "§3.2.1: Shared Key — односторонний обмен «запрос — ответ», точка доступа станции себя не доказывает; SSID «is not an access control feature», MAC-адрес не шифруется; §3.2.2: стандарт WEP задавал только 40-битный ключ, 104 + 24 бита IV = 128-битный ключ RC4, способ выбора IV не задан; §3.2.3: CRC-32 защищает только от случайных ошибок, для целостности нужен код с ключом; §4.3: TKIP — для уже выпущенных устройств, обновлением программ, Michael MIC; табл. 4-2: ключ пакета WEP — склейка ключа WEP и 24-битного IV; §4.2.1: парольная фраза, из которой получается PSK, «must be a long and complex, possibly randomly generated»; §5.5.1: после 4-шагового рукопожатия точка доступа и станция взаимно аутентифицированы",
+    "section": "§3.2.1: Shared Key — односторонний обмен «запрос — ответ», точка доступа станции себя не доказывает; SSID «is not an access control feature», MAC-адрес не шифруется; §3.2.2: стандарт WEP задавал только 40-битный ключ, 104 + 24 бита IV = 128-битный ключ RC4, способ выбора IV не задан; §3.2.3: CRC-32 защищает только от случайных ошибок, для целостности нужен код с ключом; §4.3: TKIP — для уже выпущенных устройств, обновлением программ, Michael MIC; табл. 4-2: ключ пакета WEP — склейка ключа WEP и 24-битного IV; §4.2.1: парольная фраза, из которой получается PSK, «must be a long and complex, possibly randomly generated»; §5.5.1: после 4-шагового рукопожатия точка доступа и станция взаимно аутентифицированы. Сверено 09.11.2026: §3.2.2, с. 3-5: большинство атак на WEP связаны с IV — по открытому IV, малому пространству IV и слабости в использовании RC4 восстанавливали ключ; WEP точно не задаёт, как выбирать и менять IV, некоторые устройства держат IV постоянным или сбрасывают в ноль; «If two messages have the same IV, and the plaintext of either message is known», второе читается без труда; даже при IV-счётчике: меньше 17 млн значений IV, на загруженной сети они могут кончиться за несколько часов; при случайном выборе вероятность повтора 50 % — примерно после 2¹² кадров. §3.2.3: CRC-32 не защищает от подмены битов, шифрование её не спасает. §4.3.2, с. 4-11 и 4-12: CCMP строит одноразовое число из 48-битного номера пакета (PN); новый временный ключ на каждом сеансе",
     "primary": true,
     "verified": true,
-    "checked": "27.10.2026",
+    "checked": "27.10.2026; 09.11.2026",
     "note": "Выведен из обращения 31.12.2025 как устаревший (https://csrc.nist.gov/pubs/sp/800/97/final); цитируется как исторический документ о WEP и 802.11i"
   },
   "ieee80211w_2009": {
@@ -76,10 +76,10 @@
     "label": "Wi-Fi Alliance FAQ «legacy protocols»",
     "title": "Wi-Fi Alliance. What are “legacy protocols”?",
     "url": "https://wi-fi.org/knowledge-center/faq/what-are-legacy-protocols",
-    "section": "WEP заменён WPA в 2003 г. как промежуточное решение (TKIP); WPA заменён WPA2 в 2004 г.; покупать только устройства с WPA3",
+    "section": "WEP заменён WPA в 2003 г. как промежуточное решение (TKIP); WPA заменён WPA2 в 2004 г.; покупать только устройства с WPA3. Сверено 09.11.2026: TKIP — «older form of security technology with some vulnerability to cryptographic attacks»; покупать и использовать советуют только устройства с WPA3",
     "primary": true,
     "verified": true,
-    "checked": "26.10.2026"
+    "checked": "26.10.2026; 09.11.2026"
   },
   "wfa_wpa2_2006": {
     "label": "Network World 2010",
@@ -307,5 +307,152 @@
     "primary": true,
     "verified": true,
     "checked": "26.10.2026"
+  },
+  "acm_ethics_2018": {
+    "label": "ACM Code of Ethics 2018",
+    "title": "ACM Code of Ethics and Professional Conduct (2018)",
+    "url": "https://www.acm.org/code-of-ethics",
+    "section": "Принцип 2.8: пользоваться чужими компьютерами, сетями и данными — только с разрешения; то, что система общедоступна, само по себе разрешением не считается",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "cert_cvd": {
+    "label": "CERT/CC CVD Guide",
+    "title": "CERT/CC. The CERT Guide to Coordinated Vulnerability Disclosure, раздел Finder/Reporter",
+    "url": "https://certcc.github.io/CERT-Guide-to-CVD/topics/roles/finder/",
+    "section": "Отчёт об уязвимости обычно передают производителю, иногда — координатору",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "cert_vu228519": {
+    "label": "CERT/CC VU#228519",
+    "title": "CERT/CC Vulnerability Note VU#228519, 16.10.2017: Wi-Fi Protected Access (WPA) handshake traffic can be manipulated to induce nonce and session key reuse",
+    "url": "https://www.kb.cert.org/vuls/id/228519",
+    "section": "«Wi-Fi Protected Access (WPA) handshake traffic can be manipulated to induce nonce and session key reuse»",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "ftc_public_wifi": {
+    "label": "FTC 02.2023",
+    "title": "FTC Consumer Advice. Are Public Wi-Fi Networks Safe? What You Need To Know (02.2023)",
+    "url": "https://consumer.ftc.gov/articles/are-public-wi-fi-networks-safe-what-you-need-know",
+    "section": "Большинство сайтов и приложений сами шифруют данные, поэтому общественный Wi-Fi обычно безопасен; от поддельного сайта шифрование не защищает",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "hac_ch6": {
+    "label": "HAC, гл. 6",
+    "title": "Menezes A., van Oorschot P., Vanstone S. Handbook of Applied Cryptography. CRC Press, 1996. Гл. 6 «Stream Ciphers»",
+    "url": "https://cacr.uwaterloo.ca/hac/about/chap6.pdf",
+    "section": "§6.1.1 (i): шифр Вернама — каждый знак складывается со своим знаком гаммы; если гамма действительно случайна, это одноразовый блокнот: шифровка не даёт о тексте никакой информации (безусловная стойкость). Шифры с гаммой из короткого ключа безусловной стойкости не дают — расчёт на вычислительную стойкость",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "krack_2017": {
+    "label": "Vanhoef, Piessens 2017",
+    "title": "Vanhoef M., Piessens F. Key Reinstallation Attacks: Forcing Nonce Reuse in WPA2 // ACM CCS 2017; сайт авторов krackattacks.com",
+    "url": "https://www.krackattacks.com/",
+    "section": "Устройство можно было заставить заново установить уже используемый ключ; номер пакета (одноразовое число) при этом сбрасывался к начальному значению; атаки не раскрывают пароль сети, смена пароля атаку не предотвращает и не смягчает (FAQ); пользователям — установить обновления",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "kz_cert": {
+    "label": "KZ-CERT",
+    "title": "KZ-CERT — национальная служба реагирования на компьютерные инциденты (АО «Государственная техническая служба»)",
+    "url": "https://kz-cert.kz/",
+    "section": "Главная страница: «Сообщить об инциденте», бесплатная горячая линия 1400, incident@cert.gov.kz",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "kz_pd_94v": {
+    "label": "Закон РК № 94-V, ст. 12 п. 2",
+    "title": "Закон РК от 21.05.2013 № 94-V «О персональных данных и их защите», ст. 12 п. 2",
+    "url": "https://adilet.zan.kz/rus/docs/Z1300000094",
+    "section": "Хранение персональных данных — в базе и (или) цифровом объекте на территории Республики Казахстан",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "kz_pd_94v_12_1": {
+    "label": "Закон РК № 94-V, ст. 12 п. 1",
+    "title": "Закон РК от 21.05.2013 № 94-V «О персональных данных и их защите», ст. 12 п. 1",
+    "url": "https://adilet.zan.kz/rus/docs/Z1300000094",
+    "section": "Накопление персональных данных — сбор данных, необходимых и достаточных для задач собственника или оператора",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "kz_pd_94v_def": {
+    "label": "Закон РК № 94-V, ст. 1",
+    "title": "Закон РК от 21.05.2013 № 94-V «О персональных данных и их защите», ст. 1 пп. 2, 14-1, 16 (редакция на 09.11.2026)",
+    "url": "https://adilet.zan.kz/rus/docs/Z1300000094",
+    "section": "Персональные данные — сведения о субъекте (физическом лице), дополненные идентификаторами — информацией, позволяющей его идентифицировать",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "kz_uk_205": {
+    "label": "УК РК, ст. 205",
+    "title": "Уголовный кодекс РК от 03.07.2014 № 226-V, ст. 205 «Неправомерный доступ к информации»",
+    "url": "https://adilet.zan.kz/rus/docs/K1400000226",
+    "section": "Ч. 1: умышленный неправомерный доступ к охраняемой законом информации на электронном носителе или к объекту информатизации, повлёкший существенный вред; наказание — от штрафа до 160 МРП до ареста на срок до 40 суток",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "saltzer_1975": {
+    "label": "Saltzer, Schroeder 1975",
+    "title": "Saltzer J. H., Schroeder M. D. The Protection of Information in Computer Systems // Proceedings of the IEEE. 1975. Vol. 63, no. 9",
+    "url": "https://web.mit.edu/Saltzer/www/publications/protection/Basic.html",
+    "section": "Принцип Open design: защита держится не на незнании устройства, а на ключах и паролях",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "wfa_update_2017": {
+    "label": "Wi-Fi Alliance 16.10.2017",
+    "title": "Wi-Fi Alliance. Wi-Fi Alliance security update, 16.10.2017",
+    "url": "https://www.wi-fi.org/news-events/newsroom/wi-fi-alliance-security-update",
+    "section": "Ошибка исправляется обычным обновлением программ; Wi-Fi Alliance требует проверять её в лабораториях сертификации",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026"
+  },
+  "lecture_10_11_otp": {
+    "label": "Лекция 10–11, контрольные вопросы",
+    "title": "Лекция 10–11 «Системы с открытым ключом», контрольные вопросы",
+    "file": "Лекция_10_11_Системы_с_открытым_ключом_Теоретические_основы_системы.docx",
+    "section": "«Может ли быть взломан правильно реализованный „одноразовый блокнот“?»",
+    "primary": false,
+    "verified": true,
+    "checked": "09.11.2026",
+    "kind": "lecture"
+  },
+  "lecture_14_15_range": {
+    "label": "Лекция 14–15, «Реализация безопасности», размещение точек доступа",
+    "title": "Лекция 14–15 «Безопасность беспроводных соединений», раздел «Реализация безопасности беспроводных сетей», размещение точек доступа",
+    "file": "Лекция_14_15_Безопасность_беспроводных_соединений.docx",
+    "section": "«Беспроводные сигналы могут распространяться на значительные расстояния… до других этажей здания, автомобильной парковки или вовсе за пределы территории предприятия»",
+    "primary": false,
+    "verified": true,
+    "checked": "09.11.2026",
+    "kind": "lecture"
+  },
+  "project_rules": {
+    "label": "README проекта, «Рамки»",
+    "title": "«Ключ и замок»: README.md, раздел «Рамки»",
+    "file": "README.md",
+    "section": "Программа не сканирует эфир, не подключается к сетям Wi-Fi, не работает с трафиком и не подбирает пароли",
+    "primary": true,
+    "verified": true,
+    "checked": "09.11.2026",
+    "kind": "project"
   }
 }

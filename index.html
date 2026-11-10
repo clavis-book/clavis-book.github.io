@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="text-scale" content="scale">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; require-trusted-types-for 'script'; trusted-types 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>Ключ и замок</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/mission.css">
+</head>
+<body>
+<header class="top" id="top"></header>
+<main id="app" tabindex="-1"><p class="page">Загрузка… Если этот текст не исчезает, в браузере отключён JavaScript.</p></main>
+<!-- Порядок важен: правила разметки и модели, затем содержание, затем страница. -->
+<script src="js/markup.js"></script>
+<script src="js/content-model.js"></script>
+<script src="js/mission-text.js"></script>
+<script src="models/nonce-reuse.js"></script>
+<!-- Источники: копия data/sources.json (обновляет tools/web_data.py) -->
+<script src="data/sources.js"></script>
+<!-- Содержание: карта разделов, строки интерфейса, ступени, миссии -->
+<script src="content/sections.js"></script>
+<script src="content/ui/ru.js"></script>
+<script src="content/ui/kk.js"></script>
+<script src="content/ui/en.js"></script>
+<script src="content/ru/r11-prosto.js"></script>
+<script src="content/ru/r11-poprobuy.js"></script>
+<script src="content/ru/r11-proverka.js"></script>
+<script src="content/ru/r13-prosto.js"></script>
+<script src="content/ru/r13-poprobuy.js"></script>
+<script src="content/ru/r13-proverka.js"></script>
+<script src="content/kk/r11-prosto.js"></script>
+<script src="content/missions/r11-m01/common.js"></script>
+<script src="content/missions/r11-m01/byuro.js"></script>
+<!-- Страница -->
+<script src="js/ui.js"></script>
+<script src="js/interactives.js"></script>
+<script src="js/mission.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

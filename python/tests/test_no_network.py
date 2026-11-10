@@ -14,13 +14,15 @@ import unittest
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
+# Скрипты веб-версии (tools/*.py в корне репозитория) проверяются по тем же правилам.
+TOOLS_DIR = PROJECT_DIR.parent / "tools"
 
 # Разрешено во всём проекте: стандартные модули из списка ниже и скрипты самого проекта.
 # Из os разрешён только os.path: в os есть system, popen, startfile, spawn* — запуск программ.
 ALLOWED_MODULES = {
     "__future__", "argparse", "csv", "dataclasses", "hashlib", "hmac", "json", "math", "os.path",
     "pathlib", "re", "secrets", "sys", "textwrap", "typing", "zlib",
-    "wifi", "main", "teacher",
+    "wifi", "main", "teacher", "web_data", "make_vectors",
 }
 # Только в tests/: ast разбирает код, random даёт случайные данные с фиксированным зерном,
 # остальное — подмена ввода, перехват вывода, временные папки и замер времени.
@@ -45,8 +47,17 @@ def project_files(pattern):
                   if not SKIP_DIRS & set(p.relative_to(PROJECT_DIR).parts))
 
 
+def checked_files():
+    """Все .py, которые проверяет этот тест: программа на Python и скрипты tools/."""
+    return project_files("*.py") + sorted(TOOLS_DIR.glob("*.py"))
+
+
+def rel(path):
+    return path.relative_to(PROJECT_DIR.parent)
+
+
 def is_test_file(path):
-    return path.relative_to(PROJECT_DIR).parts[0] == "tests"
+    return PROJECT_DIR in path.parents and path.relative_to(PROJECT_DIR).parts[0] == "tests"
 
 
 def parse(path):
@@ -113,32 +124,32 @@ def forbidden_calls(tree):
 def import_problems(path):
     """Список нарушений белого списка в одном файле."""
     allowed = ALLOWED_MODULES | (ALLOWED_IN_TESTS if is_test_file(path) else set())
-    return [f"{path.relative_to(PROJECT_DIR)}:{line} импортирует {name}"
+    return [f"{rel(path)}:{line} импортирует {name}"
             for name, line in imported_names(parse(path)) if not is_allowed(name, allowed)]
 
 
 class NoNetworkTests(unittest.TestCase):
     def test_all_project_files_are_checked(self):
-        names = {p.name for p in project_files("*.py")}
+        names = {p.name for p in checked_files()}
         for expected in ("main.py", "common.py", "reference.py", "principles.py", "auditor.py",
-                         "test_no_network.py"):
+                         "test_no_network.py", "web_data.py", "make_vectors.py"):
             self.assertIn(expected, names)
 
     def test_imports_are_whitelisted(self):
-        problems = [p for path in project_files("*.py") for p in import_problems(path)]
+        problems = [p for path in checked_files() for p in import_problems(path)]
         self.assertEqual(problems, [], "\n".join(problems))
 
     def test_test_only_modules_are_not_used_by_program(self):
         """random, unittest, ast и прочие «тестовые» модули в коде программы не нужны."""
-        for path in project_files("*.py"):
+        for path in checked_files():
             if is_test_file(path):
                 continue
             used = {name for name, _ in imported_names(parse(path)) if is_allowed(name, ALLOWED_IN_TESTS)}
             self.assertEqual(used, set(), path.name)
 
     def test_no_dangerous_calls(self):
-        problems = [f"{path.relative_to(PROJECT_DIR)}:{line} вызывает {what}"
-                    for path in project_files("*.py") for what, line in forbidden_calls(parse(path))]
+        problems = [f"{rel(path)}:{line} вызывает {what}"
+                    for path in checked_files() for what, line in forbidden_calls(parse(path))]
         self.assertEqual(problems, [], "\n".join(problems))
 
     def test_wifi_modules_do_not_print_or_ask(self):

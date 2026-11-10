@@ -5,3 +5,9 @@
 *.json text eol=lf
 *.md text eol=lf
 *.docx binary
+# Веб-версия: переводы строк LF, шрифты — двоичные файлы.
+*.js text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.txt text eol=lf
+*.ttf binary
