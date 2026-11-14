@@ -150,10 +150,10 @@ App.sources({
   "label": "Wi-Fi Alliance «Security»",
   "title": "Wi-Fi Alliance. Discover Wi-Fi: Security",
   "url": "https://www.wi-fi.org/discover-wi-fi/security",
-  "section": "WPA3 обязательна для Wi-Fi CERTIFIED устройств; Enhanced Open — шифрование в открытых сетях без пароля",
+  "section": "WPA3 обязательна для Wi-Fi CERTIFIED устройств; Enhanced Open — шифрование в открытых сетях без пароля. Подвал страницы (сверено 14.11.2026): «Wi-Fi®, Wi-Fi CERTIFIED®, Wi-Fi Alliance®… are trademarks of Wi-Fi Alliance» — Wi-Fi — товарный знак Wi-Fi Alliance",
   "primary": true,
   "verified": true,
-  "checked": "26.10.2026"
+  "checked": "26.10.2026; 14.11.2026"
  },
  "cisa_m5": {
   "label": "CISA Project Upskill M5",
@@ -186,7 +186,7 @@ App.sources({
   "label": "Лекция 14–15, «Беспроводные сети»",
   "title": "Лекция 14–15 «Безопасность беспроводных соединений», раздел «Беспроводные сети»",
   "file": "Лекция_14_15_Безопасность_беспроводных_соединений.docx",
-  "section": "WEP: три службы (аутентификация, конфиденциальность, целостность), RC4, ключи «40 бит и 128 бит», CRC-32; аутентификация открытых систем по MAC-адресу; нет обратной аутентификации точки доступа",
+  "section": "Радиус действия 802.11x: около 50 м в помещении, до 500 м на открытой местности; WEP: три службы (аутентификация, конфиденциальность, целостность), RC4, ключи «40 бит и 128 бит», CRC-32; аутентификация открытых систем по MAC-адресу; нет обратной аутентификации точки доступа",
   "primary": false,
   "verified": true,
   "kind": "lecture"

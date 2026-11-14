@@ -141,6 +141,7 @@ main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 
 .sources { font-size: .88rem; color: var(--ink-2); border-top: 1px solid var(--rule); padding-top: .8rem; }
 .sources ol { margin: .4rem 0 0; padding-left: 1.4rem; display: grid; gap: .3rem; }
+.sources li { min-width: 0; overflow-wrap: anywhere; }   /* длинные имена файлов лекций не раздвигают страницу на телефоне */
 .sources li.flash { background: var(--green-soft); }
 
 /* ---------- Интерактивы ---------- */
@@ -254,3 +255,10 @@ fieldset.opts legend { padding: 0; margin-bottom: .6rem; }
 .exam-list .where { display: block; color: var(--ink-2); margin-top: .15rem; }
 .exam-mark { display: inline-block; font-size: .78rem; line-height: 1.5; padding: 0 .5rem; border: 1px solid var(--green); border-radius: 999px; color: var(--green); text-decoration: none; white-space: nowrap; vertical-align: .1em; }
 .exam-mark:hover { background: var(--green-soft); }
+
+/* ---------- QR-код страницы (Р11 «Преподавателю») ---------- */
+/* Код всегда тёмный на белом, с белым полем вокруг, — и в тёмной теме: так его читает любая камера. */
+.qr-pic svg { max-width: 15rem; margin-inline: auto; border-radius: 4px; }
+.qr-pic.big svg { max-width: min(100%, 70vh); }
+.qr-addr { margin: 0; font-family: var(--mono); font-size: .85rem; text-align: center; overflow-wrap: anywhere; }
+.warn-note { border-left: 3px solid var(--ochre); padding-left: .6rem; }

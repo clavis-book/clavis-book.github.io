@@ -50,6 +50,8 @@ const STORAGE = ['localStorage', 'sessionStorage', 'indexedDB'];
 // Элементы, которые сами что-то загружают или отправляют: страница их не создаёт.
 const LOADING_TAGS = 'img|iframe|script|link|object|embed|audio|video|source|track|form|base|meta|picture|image|use';
 
+const QR_ADDRESS_READS = /location\.href\.split\('#'\)\[0\]|location\.protocol === 'file:'|\.test\(location\.hostname\)/;
+
 function problems(rel, text) {
   const found = [];
   // Запрещённое ищем и в «сплющенном» тексте: без пробелов, без «?.» и с одинаковыми кавычками, —
@@ -61,7 +63,12 @@ function problems(rel, text) {
   // Код страницы и модели (не тексты содержания): из адреса страницы — только часть после #, никаких новых
   // окон, нажатий из кода, адресов через setAttribute, файлов, перетаскивания и вставки.
   if (/^(?:js|models)\//.test(rel)) {
-    if (/\blocation\b(?!\.hash\b)/.test(text)) found.push(rel + ': из адреса страницы разрешён только location.hash');
+    // Единственное исключение (14.11.2026): QR-код в js/interactives.js кодирует ссылку на
+    // учебник для телефонов, поэтому читает адрес страницы до # и проверяет, не файл ли это на диске и не
+    // localhost (такой адрес телефон не откроет). Только эти три чтения и только в этом файле; менять адрес
+    // по-прежнему нельзя — это ловит правило «переход на другой адрес» ниже.
+    const reads = rel === 'js/interactives.js' ? text.split(QR_ADDRESS_READS).join('') : text;
+    if (/\blocation\b(?!\.hash\b)/.test(reads)) found.push(rel + ': из адреса страницы разрешён только location.hash');
     if (/(?<![\w$.])(?<!function\s+)open\s*\(|(?:window|self|globalThis|top|parent)\s*\??\.\s*open\b/.test(text)) found.push(rel + ': новое окно из кода');
     if (/\.click\s*\(/.test(text)) found.push(rel + ': нажатие из кода');
     if (/["'`](?:file|drop|paste|drag\w*)["'`]/.test(text)) found.push(rel + ': файлы, перетаскивание или вставка');
@@ -115,6 +122,13 @@ test('проверка проверяющего: на плохом коде ср
   // Разрешённое — не ловится.
   assert.deepEqual(problems('js/proba.js', "// здесь нет сети и вставки HTML-строк\nel.replaceChildren(h('p', {}, text));\nsetTimeout(tick, 55);\nlocation.hash = 'karta';\nif (location.hash === '#x') s('line', { x1: 0 });\nfunction open(id) { return id; }\nApp.missionView.open(r.mission);"), []);
   assert.deepEqual(problems('js/ui.js', "localStorage.getItem('kilt:v1')"), []);
+  // Исключение для QR-кода — только три чтения адреса и только в js/interactives.js.
+  const qrReads = "const base = location.href.split('#')[0];\nconst local = location.protocol === 'file:' || /^x$/.test(location.hostname);";
+  assert.deepEqual(problems('js/interactives.js', qrReads), []);
+  assert.ok(problems('js/proba.js', qrReads).length, 'чтение адреса вне js/interactives.js');
+  for (const line of ['const q = location.search;', 'location.href = u;', "const p = location.pathname;", 'send(location.href);']) {
+    assert.ok(problems('js/interactives.js', line).length, 'не поймано в js/interactives.js: ' + line);
+  }
 });
 
 test('каждая страница: CSP без unsafe-inline и с Trusted Types, ничего внешнего, без встроенных скриптов и стилей', () => {
@@ -157,9 +171,10 @@ test('стили: ничего внешнего, шрифты лежат в пр
   assert.doesNotMatch(css, /(?:^|[\s,}])(?::root|html)(?:[.\[][^{]*)?\s*\{[^}]*font-size/m, 'font-size на :root или html');
 });
 
-test('ссылки наружу в текстах — только https и открываются отдельно; внутренние — по #', () => {
+test('ссылки наружу в текстах — только https и открываются отдельно; внутренние — по #, файлы — из docs/', () => {
   const ui = read('js/ui.js');
   assert.match(ui, /target: '_blank', rel: 'noopener noreferrer'/);
   const markup = read('js/markup.js');
-  assert.match(markup, /https:\\\/\\\/\|#/, 'ссылки в разметке — только https:// или #');
+  assert.ok(markup.includes(String.raw`(?:https:\/\/|#|docs\/)[^)\s]+`), 'ссылки в разметке — только https://, # или docs/');
+  assert.ok(markup.includes(String.raw`const DOC_LINK = /^docs\/`), 'файл учебника — только из папки docs/');
 });

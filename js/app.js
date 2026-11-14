@@ -1,5 +1,5 @@
 // Приложение: адреса страниц и экраны — вход, карта разделов, карта к экзамену, ступень раздела, миссия,
-// разделы преподавателя и проектора (пока «скоро»), модель содержания с проверкой всех текстов.
+// страница преподавателя (материалы к паре по разделам), проектор (пока «скоро»), модель содержания с проверкой всех текстов.
 // Подключается последним: к этому моменту загружены содержание, модели и общие части страницы.
 (function () {
   'use strict';
@@ -36,7 +36,7 @@
       errorBanner()),
       h('div', { class: 'map entry' },
         tile('karta', t('вход.студенту'), t('вход.студенту-текст')),
-        tile('prepodavatelyu', t('вход.преподавателю'), t('вход.преподавателю-текст'), true),
+        tile('prepodavatelyu', t('вход.преподавателю'), t('вход.преподавателю-текст')),
         tile('proektor', t('вход.проектор'), t('вход.проектор-текст'), true)),
       h('p', { class: 'reading small muted' }, t('вход.устройство'), ' ', h('a', { href: '#model' }, t('вход.модель'))));
   }
@@ -193,7 +193,25 @@
         passed ? h('span', { class: 'chip ok' }, t('миссии.пройдена')) : null));
   }
 
-  // ---------- Преподавателю и проектор — пока «скоро» ----------
+  // ---------- Преподавателю: готовые материалы к паре по разделам; кабинет — пока «скоро» ----------
+  // Плитка появляется сама, когда у раздела есть ступень «Преподавателю» (файл content/ru/…-prepod.js).
+  function teacherScreen() {
+    const ready = App.sectionList.filter(sec => hasStep(sec.id, 'преподавателю'));
+    page(h('div', { class: 'reading stack' },
+      h('h1', {}, t('преподавателю.заголовок')),
+      h('p', { class: 'lead' }, t('преподавателю.текст')),
+      errorBanner()),
+      h('ul', { class: 'map entry', role: 'list' }, ready.map(sec => h('li', {},
+        h('a', { class: 'tile' + (sec.flagship ? ' flag' : ''), href: '#' + sec.id + '-prepod' },
+          h('span', { class: 't' }, t('раздел.номер', { n: sec.no }) + ' · ' + sec.title),
+          h('span', { class: 'a' }, t('преподавателю.к-паре'))))),
+        h('li', {}, h('div', { class: 'tile soon' },
+          h('span', { class: 't' }, t('преподавателю.кабинет')), h('span', { class: 'a' }, t('преподавателю.кабинет-текст')),
+          h('span', { class: 'chip' }, t('скоро'))))),
+      h('p', { class: 'reading' }, h('a', { href: '#karta' }, t('вход.к-карте'))));
+  }
+
+  // ---------- Проектор — пока «скоро» ----------
   function soonScreen(key) {
     page(h('div', { class: 'reading stack' }, h('h1', {}, t(key + '.заголовок')), h('p', { class: 'chip' }, t('скоро')),
       h('p', {}, t(key + '.текст')), h('p', {}, h('a', { href: '#karta' }, t('вход.к-карте')))));
@@ -230,14 +248,16 @@
   function route() {
     const r = CM.parseRoute(location.hash);
     if (r.page === 'step' && forceRu && forceRu !== r.section + '-' + r.step) forceRu = null;
-    V.renderTop({ vhod: '', karta: 'karta', ekzamen: 'karta', step: 'karta', mission: 'karta', prepodavatelyu: 'prepodavatelyu', proektor: 'proektor', model: 'model' }[r.page] ?? '');
+    // Ступень «Преподавателю» — в разделе преподавателя верхней полосы, остальные ступени — в разделе студента.
+    const area = r.page === 'step' && r.step === 'prepod' ? 'prepodavatelyu' : r.page;
+    V.renderTop({ vhod: '', karta: 'karta', ekzamen: 'karta', step: 'karta', mission: 'karta', prepodavatelyu: 'prepodavatelyu', proektor: 'proektor', model: 'model' }[area] ?? '');
     document.title = t('название');
     if (r.page === 'vhod') return entryScreen();
     if (r.page === 'karta') return mapScreen();
     if (r.page === 'ekzamen') return examScreen();
     if (r.page === 'step') return stepScreen(r.section, r.step);
     if (r.page === 'mission') return CM.isRoute(location.hash) ? App.missionView.open(r.mission) : notFound();
-    if (r.page === 'prepodavatelyu') return soonScreen('преподавателю');
+    if (r.page === 'prepodavatelyu') return teacherScreen();
     if (r.page === 'proektor') return soonScreen('проектор');
     if (r.page === 'model') return modelScreen();
     return notFound();

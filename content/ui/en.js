@@ -32,7 +32,7 @@ App.ui(String.raw`
 вход.студенту: Students
 вход.студенту-текст: Section map, steps, questions with explanations and the “Kilt Bureau” mission in section 11
 вход.преподавателю: Teachers
-вход.преподавателю-текст: Dashboard: groups, collecting work, rubric checking, summary
+вход.преподавателю-текст: Ready for class: the “mission in class” scenario, the lab, a QR code for phones. The dashboard comes later
 вход.проектор: Projector mode
 вход.проектор-текст: Large model, question of the day and class stages for a shared screen
 вход.устройство: Progress, answers and the card collection are stored only in this browser, without a name. The textbook needs no internet.
@@ -156,7 +156,7 @@ App.ui(String.raw`
 миссии.только-русский: The mission is in Russian only for now.
 
 преподавателю.заголовок: For teachers
-преподавателю.текст: The teacher's dashboard will be here: groups, collecting work, rubric checking and a summary. It will appear later.
+преподавателю.текст: What is ready for class, by section: a lesson scenario, the lab and a QR code so students can open the section on their phones. The dashboard with groups and submissions will come later.
 проектор.заголовок: Projector mode
 проектор.текст: A mode for a shared screen will be here: a large model, question of the day and class stages with a timer. It will appear later. For now, use the “Group mode” button in the top bar.
 нет.заголовок: No such page

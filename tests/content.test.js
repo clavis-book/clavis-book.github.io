@@ -45,7 +45,9 @@ test('карта разделов: 16 разделов по порядку, ра
   assert.deepEqual(list.filter(s => s.flagship).map(s => s.id), ['r11']);
   for (const id of ['r11', 'r13']) {
     const s = list.find(x => x.id === id);
-    for (const step of ['глубже', 'дома', 'преподавателю']) assert.ok(s.plans[step], id + ': нет плана ступени «' + step + '»');
+    for (const step of ['глубже', 'дома', 'преподавателю']) {
+      if (!App.find(id, step, 'ru')) assert.ok(s.plans[step], id + ': нет ни текста, ни плана ступени «' + step + '»');
+    }
   }
 });
 
@@ -273,4 +275,39 @@ test('прогресс и коллекция хранятся по кодам, �
     for (const m of read(f).matchAll(/markDone\(([^)]*)\)/g)) assert.doesNotMatch(m[1], /[А-Яа-яЁё]/, f + ': ' + m[0]);
   }
   assert.doesNotMatch(read('js/mission.js'), /collection\.add\('cards', [^)]*term/, 'карточка в коллекции — по коду, не по термину');
+});
+
+test('ссылки на файлы учебника: только из папки docs/, и каждый файл существует', () => {
+  const App = loadApp();
+  const links = [];
+  for (const f of CONTENT().filter(s => s.startsWith('content/'))) {
+    for (const m of read(f).matchAll(/\]\((docs\/[^)\s]+)\)/g)) links.push([f, m[1]]);
+  }
+  assert.ok(links.length >= 2, 'нет ссылок на лабораторную в docs/lab');
+  for (const [f, href] of links) assert.ok(fs.existsSync(path.join(ROOT, href)), f + ': нет файла ' + href);
+  // Проверка страницы не пропускает выход из папки, параметры и чужие расширения.
+  const step = 'content/ru/r11-prepod.js';
+  const bad = read(step).replace('[То же простым текстом](docs/lab/Лабораторная_WiFi.md)',
+    '[а](docs/../index.html) [б](docs/lab/run.exe) [в](docs/lab/x.md?y=1)');
+  const texts = local(validate(loadApp({ [step]: bad })).issues).map(i => i.text).filter(t => /файл учебника/.test(t));
+  assert.equal(texts.length, 3, JSON.stringify(texts));
+  assert.deepEqual(local(validate(App).issues), []);
+});
+
+test('«Проверь себя» Р11: 8 вопросов, верный ответ — на разных местах, не самый длинный и одной длины с другими', () => {
+  const App = loadApp();
+  const f = local(App.files.find(x => x.meta['раздел'] === 'r11' && x.meta['ступень'] === 'проверка'));
+  assert.equal(f.records.length, 8);
+  const places = new Set(), longest = [];
+  for (const q of f.records) {
+    const len = q.options.map(o => o.text.length), right = q.options.findIndex(o => o.correct);
+    places.add(right);
+    if (len[right] === Math.max(...len)) longest.push(q.id);
+    assert.ok(Math.max(...len) / Math.min(...len) <= 1.35, q.id + ': варианты слишком разной длины: ' + len);
+    assert.ok(q.options.every(o => o.why), q.id + ': у каждого варианта — разбор');
+    assert.ok(q.hints.length === 2, q.id + ': две подсказки');
+    assert.ok(q.hints.some(h => /\]\(#r11-[a-z]+\)/.test(h)), q.id + ': подсказка ведёт на ступень раздела ссылкой');
+  }
+  assert.equal(places.size, 4, 'верный ответ стоит на всех четырёх местах');
+  assert.ok(longest.length <= 2, 'верный — самый длинный слишком часто: ' + longest);
 });

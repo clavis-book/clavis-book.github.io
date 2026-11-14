@@ -86,6 +86,8 @@
       if (tok.t === 'check') return h('span', { class: 'check', title: tok.what ? t('ист.что-сверить', { что: tok.what }) : t('ист.не-сверено') }, t('ист.проверить'));
       if (tok.t === 'exam') return tok.ids.map(examMark);
       if (tok.href[0] === '#') return h('a', { href: tok.href }, tok.text);
+      // Файл из папки docs/ учебника: открывается или скачивается браузером, интернет не нужен.
+      if (tok.href.startsWith('docs/')) return h('a', { href: tok.href }, tok.text, h('span', { class: 'ext', 'aria-hidden': 'true' }, '⤓'), h('span', { class: 'visually-hidden' }, ' ' + t('ссылка.файл')));
       return h('a', { href: tok.href, target: '_blank', rel: 'noopener noreferrer' }, tok.text, h('span', { class: 'ext', 'aria-hidden': 'true' }, '↗'), h('span', { class: 'visually-hidden' }, ' ' + t('ссылка.наружу')));
     });
   }

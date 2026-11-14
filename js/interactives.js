@@ -151,6 +151,39 @@
     update();
   } };
 
+  // ---------- QR-код страницы раздела: преподаватель показывает его на экране, студенты открывают с телефона ----------
+  // Код строится из адреса, по которому открыт учебник (js/qr.js, без сети). Адрес файла на диске или
+  // localhost телефон не откроет — тогда под кодом сказано, что он заработает после публикации учебника.
+  App.interactives.qr = { render(box) {
+    const TARGETS = [['r11-prosto', 'qr.цель.просто'], ['missiya-r11-m01', 'qr.цель.миссия'], ['r11-proverka', 'qr.цель.проверка']];
+    const base = location.href.split('#')[0];
+    const local = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    const name = newId('qr');
+    let target = TARGETS[0][0], big = false;
+    const pic = h('div', { class: 'qr-pic' }), addr = h('p', { class: 'qr-addr', lang: 'en' });
+    const bigBtn = h('button', { type: 'button', class: 'btn ghost', 'aria-pressed': 'false', onclick: () => {
+      big = !big; bigBtn.setAttribute('aria-pressed', String(big)); pic.classList.toggle('big', big);
+    } }, t('qr.крупно'));
+    function draw() {
+      const url = base + '#' + target;
+      const q = QR.encode(url), n = q.size + 8;      // поле по 4 модуля с каждой стороны — его требует стандарт
+      let d = '';
+      q.modules.forEach((row, y) => row.forEach((dark, x) => { if (dark) d += 'M' + (x + 4) + ' ' + (y + 4) + 'h1v1h-1z'; }));
+      const label = TARGETS.find(x => x[0] === target)[1];
+      pic.replaceChildren(s('svg', { viewBox: '0 0 ' + n + ' ' + n, role: 'img', 'aria-label': t('qr.подпись', { куда: t(label) }), 'shape-rendering': 'crispEdges' },
+        s('rect', { width: n, height: n, fill: '#fff' }), s('path', { d, fill: '#000' })));
+      addr.textContent = url;
+    }
+    const choices = h('div', { class: 'bins', role: 'radiogroup', 'aria-label': t('qr.куда') }, TARGETS.map(([id, key], i) => {
+      const input = h('input', { type: 'radio', name, id: name + '-' + i, checked: i === 0, onchange: () => { target = id; draw(); } });
+      return h('label', { class: 'opt', for: name + '-' + i }, input, h('span', {}, t(key)));
+    }));
+    box.append(h('h3', { class: 'ia-title' }, t('qr.заголовок')), choices, pic, addr,
+      h('p', { class: local ? 'note warn-note' : 'note' }, t(local ? 'qr.локальный' : 'qr.как')),
+      h('div', { class: 'row' }, bigBtn));
+    draw();
+  } };
+
   // ---------- Сортировка по корзинам: её целиком наполняет файл ступени («интерактив: сортировка») ----------
   App.interactives.sort = { render(box, ctx, file) {
     if (!file || file.kind !== 'cases') { box.append(t('сортировка.нет')); return; }
