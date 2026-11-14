@@ -1,5 +1,5 @@
-// Приложение: адреса страниц и экраны — вход, карта разделов, ступень раздела, миссия, разделы
-// преподавателя и проектора (пока «скоро»), модель содержания с проверкой всех текстов.
+// Приложение: адреса страниц и экраны — вход, карта разделов, карта к экзамену, ступень раздела, миссия,
+// разделы преподавателя и проектора (пока «скоро»), модель содержания с проверкой всех текстов.
 // Подключается последним: к этому моменту загружены содержание, модели и общие части страницы.
 (function () {
   'use strict';
@@ -52,7 +52,8 @@
       h('p', { class: 'muted' }, t('карта.текст')),
       errorBanner(),
       h('p', { class: 'legend' }, h('span', {}, h('span', { class: 'tick done' }), t('карта.пройдено')), ' ',
-        h('span', {}, h('span', { class: 'tick' }), t('карта.впереди')), ' ', h('span', {}, t('карта.отметки')))),
+        h('span', {}, h('span', { class: 'tick' }), t('карта.впереди')), ' ', h('span', {}, t('карта.отметки'))),
+      examLink()),
       h('ul', { class: 'map', role: 'list' }, App.sectionList.map(sec => {
         const live = CM.STEPS.some(st => hasStep(sec.id, st.name));
         const ticks = CORE_STEPS.map(st => done(sec.id, st));
@@ -68,6 +69,62 @@
         h('h2', { id: 'coll-h' }, t('карта.коллекция')),
         h('p', {}, t('карта.коллекция-текст', { карточек: V.collection.count('cards'), наград: V.collection.count('badges') })),
         h('div', { class: 'row' }, wipe)));
+  }
+
+  // ---------- Карта к экзамену ----------
+  // Контрольные вопросы лекций (content/ekzamen.js) и где каждый разобран. «Разобран» считает модель
+  // содержания по меткам [[экзамен: код]] в текстах ступеней, а не автор вручную.
+  const placeLabel = (secId, step) => {
+    const sec = App.sectionList.find(s => s.id === secId), st = CM.STEPS.find(s => s.name === step);
+    return (sec ? t('раздел.номер', { n: sec.no }) + ' «' + sec.title + '»' : secId) + ' · ' + (st ? t('ступень.' + st.slug) : step);
+  };
+  const placeLink = (secId, step) => {
+    const st = CM.STEPS.find(s => s.name === step);
+    return h('a', { href: '#' + secId + '-' + (st ? st.slug : '') }, placeLabel(secId, step), hasStep(secId, step) ? null : ' (' + t('скоро') + ')');
+  };
+  function examLink() {
+    if (!App.examMap) return null;
+    const cov = CM.examCoverage();
+    return h('p', { class: 'exam-link' }, h('a', { href: '#ekzamen' }, t('экзамен.заголовок')), ' — ',
+      t('экзамен.счётчик', { n: cov.covered, всего: cov.total }));
+  }
+  function examScreen() {
+    const E = App.examMap;
+    if (!E) return notFound();
+    const cov = CM.examCoverage();
+    const counter = t('экзамен.счётчик', { n: cov.covered, всего: cov.total });
+    // Раскрыть или свернуть все лекции разом (по одной — щелчком по заголовку лекции).
+    const toggle = h('button', { type: 'button', class: 'btn ghost', onclick: () => {
+      const open = toggle.dataset.open !== '1';
+      document.querySelectorAll('details.exam-lec').forEach(d => { d.open = open; });
+      toggle.dataset.open = open ? '1' : '';
+      toggle.textContent = t(open ? 'экзамен.свернуть' : 'экзамен.раскрыть');
+    } }, t('экзамен.раскрыть'));
+    page(h('div', { class: 'reading stack' },
+      h('nav', { class: 'crumbs', 'aria-label': t('путь') }, h('a', { href: '#karta' }, t('карта.заголовок'))),
+      h('h1', {}, t('экзамен.заголовок')),
+      h('p', { class: 'lead' }, t('экзамен.текст')),
+      errorBanner(),
+      h('div', { class: 'exam-total' }, h('p', { class: 'out-big' }, counter),
+        cov.total ? h('progress', { max: cov.total, value: cov.covered, 'aria-label': counter }) : null),
+      h('p', { class: 'note' }, t('экзамен.как-считается')),
+      h('div', { class: 'row' }, toggle)),
+      h('div', { class: 'reading stack' }, E.lectures.map(l => {
+        const done = l.questions.filter(q => cov.where[q.id]).length;
+        return h('details', { class: 'sheet exam-lec' },
+          h('summary', {}, h('span', { class: 't' }, t('экзамен.лекция', { n: l.lecture }), ' · ', h('span', { lang: 'ru' }, l.topic)),
+            h('span', { class: 'chip' + (done ? ' ok' : '') }, t('экзамен.в-лекции', { n: done, всего: l.questions.length }))),
+          h('ol', { class: 'exam-list' }, l.questions.map(q => {
+            // Разобран не там, где намечено в карте, — показываем и намеченное место: там будет основной разбор.
+            const at = cov.where[q.id];
+            const planned = !at || !at.some(p => p.section === q.section && p.step === q.step);
+            return h('li', {}, h('span', { class: 'eq', lang: 'ru' }, q.text),
+              h('span', { class: 'where small' },
+                h('span', { class: 'chip' + (at ? ' ok' : '') }, t(at ? 'экзамен.разобрано' : 'экзамен.впереди')), ' ',
+                at ? at.map((p, i) => [i ? ', ' : '', placeLink(p.section, p.step)]) : null,
+                planned ? [at ? '; ' : '', t(at ? 'экзамен.будет-также' : 'экзамен.будет'), ' ', placeLink(q.section, q.step)] : null));
+          })));
+      })));
   }
 
   // ---------- Ступень раздела ----------
@@ -173,10 +230,11 @@
   function route() {
     const r = CM.parseRoute(location.hash);
     if (r.page === 'step' && forceRu && forceRu !== r.section + '-' + r.step) forceRu = null;
-    V.renderTop({ vhod: '', karta: 'karta', step: 'karta', mission: 'karta', prepodavatelyu: 'prepodavatelyu', proektor: 'proektor', model: 'model' }[r.page] ?? '');
+    V.renderTop({ vhod: '', karta: 'karta', ekzamen: 'karta', step: 'karta', mission: 'karta', prepodavatelyu: 'prepodavatelyu', proektor: 'proektor', model: 'model' }[r.page] ?? '');
     document.title = t('название');
     if (r.page === 'vhod') return entryScreen();
     if (r.page === 'karta') return mapScreen();
+    if (r.page === 'ekzamen') return examScreen();
     if (r.page === 'step') return stepScreen(r.section, r.step);
     if (r.page === 'mission') return CM.isRoute(location.hash) ? App.missionView.open(r.mission) : notFound();
     if (r.page === 'prepodavatelyu') return soonScreen('преподавателю');

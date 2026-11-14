@@ -84,9 +84,16 @@
       if (tok.t === 'i') return h('em', {}, tok.text);
       if (tok.t === 'cite') return cite(tok.id, tok.loc, ctx);
       if (tok.t === 'check') return h('span', { class: 'check', title: tok.what ? t('ист.что-сверить', { что: tok.what }) : t('ист.не-сверено') }, t('ист.проверить'));
+      if (tok.t === 'exam') return tok.ids.map(examMark);
       if (tok.href[0] === '#') return h('a', { href: tok.href }, tok.text);
       return h('a', { href: tok.href, target: '_blank', rel: 'noopener noreferrer' }, tok.text, h('span', { class: 'ext', 'aria-hidden': 'true' }, '↗'), h('span', { class: 'visually-hidden' }, ' ' + t('ссылка.наружу')));
     });
+  }
+  // Метка «здесь разобран контрольный вопрос»: ссылка на карту к экзамену, «лекция 14–15, вопрос 7».
+  function examMark(id) {
+    const q = App.examMap && App.examMap.questions.find(x => x.id === id);
+    if (!q) return '';
+    return [' ', h('a', { class: 'exam-mark', href: '#ekzamen' }, t('экзамен.метка', { лекция: q.lectureNo, n: Number(id.slice(-2)) }))];
   }
   function cite(id, loc, ctx) {
     if (!ctx) return '';

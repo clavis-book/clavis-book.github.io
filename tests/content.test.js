@@ -153,7 +153,7 @@ function wrapperProblems(src) {
   const lines = src.replace(/\r\n?/g, '\n').replace(/\n+$/, '').split('\n');
   let i = 0;
   while (i < lines.length && (lines[i].startsWith('//') || !lines[i].trim())) i++;
-  if (!/^App\.(content|sections|ui|mission)\(String\.raw`$/.test(lines[i] || '')) out.push('первая строка кода — не App.content(String.raw` (или sections, ui, mission)');
+  if (!/^App\.(content|sections|exam|ui|mission)\(String\.raw`$/.test(lines[i] || '')) out.push('первая строка кода — не App.content(String.raw` (или sections, exam, ui, mission)');
   if (lines[lines.length - 1] !== '`);') out.push('последняя строка — не `);');
   if (src.split('`').length - 1 !== 2) out.push('обратных кавычек должно быть ровно две — в первой и последней строке');
   if (src.includes('${')) out.push('в тексте есть сочетание знаков $ и {');

@@ -99,7 +99,7 @@
       else if (!/^r\d{1,2}-m\d{2}$/.test(m.meta['миссия'])) add('ошибка', 'шапка', 'код миссии — как r11-m01 (раздел и номер миссии)');
       if (!m.meta['мир']) add('ошибка', 'шапка', 'нет строки «мир:»');
       if ((m.meta['язык'] || 'ru') !== 'ru') add('ошибка', 'шапка', 'миссии пока только на русском (язык: ru)');
-      MK.checkText(m.raw, add, { sources, isRoute: c.isRoute });
+      MK.checkText(m.raw, add, { sources, isRoute: c.isRoute, examForbidden: 'в миссии метку не ставят — её ставят в ступени, где лежит карточка миссии' });
       const isCommon = m.meta['мир'] === 'общий';
       for (const key of isCommon ? REQUIRED_COMMON : REQUIRED_WORLD) {
         const s = FIELD_BLOCKS.includes(key) ? m.fields[key] : m.scenes[key];
