@@ -26,6 +26,12 @@
   const INLINE = /\*\*([^*]+)\*\*|\*([^*]+)\*|\[\[ист:\s*(\w+)([^\]]*)\]\]|\[проверить(?::\s*([^\]]+))?\]|\[([^\]]+)\]\(((?:https:\/\/|#|docs\/)[^)\s]+)\)|\[\[экзамен:\s*([\w-]+(?:\s*,\s*[\w-]+)*)\s*\]\]/g;
   // Файл учебника: только папка docs/, без «..», параметров и якорей, с расширением документа.
   const DOC_LINK = /^docs\/(?:[^/?#.\s][^/?#\s]*\/)*[^/?#\s]+\.(?:docx|md|pdf)$/;
+  // Проверяется и раскодированный вид ссылки: «%2e%2e» браузер читает как «..» и вышел бы из папки docs/.
+  function isDocLink(href) {
+    let plain;
+    try { plain = decodeURIComponent(href); } catch (e) { return false; }
+    return DOC_LINK.test(href) && DOC_LINK.test(plain) && !/\.\.|\\|:|%/.test(plain);
+  }
 
   function inlineTokens(text) {
     const out = [], s = String(text == null ? '' : text);
@@ -240,7 +246,7 @@
         add('ошибка', 'метки', 'метка [[экзамен: ' + id + ']]: такого вопроса нет в карте к экзамену (content/ekzamen.js)'));
       else if (tok.t === 'link' && tok.href[0] === '#' && c.isRoute && !c.isRoute(tok.href)) {
         add('ошибка', 'ссылки', 'ссылка «' + tok.href + '» ведёт на страницу, которой нет в учебнике');
-      } else if (tok.t === 'link' && tok.href.startsWith('docs/') && (!DOC_LINK.test(tok.href) || tok.href.includes('..'))) {
+      } else if (tok.t === 'link' && tok.href.startsWith('docs/') && !isDocLink(tok.href)) {
         add('ошибка', 'ссылки', 'ссылка «' + tok.href + '»: файл учебника — только из папки docs/, вида docs/папка/файл.docx (.md, .pdf)');
       }
     }
@@ -254,7 +260,7 @@
 
   App.markup = {
     LANGS, CALLOUTS, QUESTION_KEYS,
-    inlineTokens, citedIds, parseSourceList, shortName, currentScript,
+    inlineTokens, isDocLink, citedIds, parseSourceList, shortName, currentScript,
     parseHeader, splitBlocks, parseFields, parseProse, parseQuestion, questionProblems, checkText
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = App;

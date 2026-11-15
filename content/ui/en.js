@@ -161,4 +161,21 @@ App.ui(String.raw`
 проектор.текст: A mode for a shared screen will be here: a large model, question of the day and class stages with a timer. It will appear later. For now, use the “Group mode” button in the top bar.
 нет.заголовок: No such page
 нет.на-вход: To the home page
+// Added 15.11.2026 (teacher page, QR code).
+ссылка.файл: (a file in the textbook folder, no internet needed)
+ступень.готово-к-карте: Done — back to the section map
+преподавателю.к-паре: The 20-minute “mission in class” scenario, the 80-minute lab, a QR code for phones
+преподавателю.кабинет: Teacher’s dashboard
+преподавателю.кабинет-текст: Groups, collecting work, rubric checking, summary, grade export
+qr.заголовок: QR code: students open the section on their phones
+qr.куда: Where the code leads
+qr.цель.просто: Section 11 from the start
+qr.цель.миссия: The “Kilt Bureau” mission
+qr.цель.проверка: Section 11, “Check yourself”
+qr.подпись: QR code with a link: {куда}
+qr.крупно: Large — for the projector
+qr.как: Show the code on the screen: students point their phone camera at it and open the link.
+qr.локальный: The textbook is open from this computer (localhost), so a phone won’t find it at this address. The code will work once the textbook is published online.
+qr.файл: The textbook is open as a file on this computer, so a phone won’t find it at this address. The QR code will appear here once the textbook is published online.
+qr.длинный: The textbook address is too long for a QR code. Shorten the folder path or open the published version.
 `);

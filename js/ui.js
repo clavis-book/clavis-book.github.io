@@ -87,6 +87,8 @@
       if (tok.t === 'exam') return tok.ids.map(examMark);
       if (tok.href[0] === '#') return h('a', { href: tok.href }, tok.text);
       // Файл из папки docs/ учебника: открывается или скачивается браузером, интернет не нужен.
+      // Ссылка, которую не пропускает проверка (выход из папки, чужое расширение), остаётся простым текстом.
+      if (tok.href.startsWith('docs/') && !MK.isDocLink(tok.href)) return tok.text;
       if (tok.href.startsWith('docs/')) return h('a', { href: tok.href }, tok.text, h('span', { class: 'ext', 'aria-hidden': 'true' }, '⤓'), h('span', { class: 'visually-hidden' }, ' ' + t('ссылка.файл')));
       return h('a', { href: tok.href, target: '_blank', rel: 'noopener noreferrer' }, tok.text, h('span', { class: 'ext', 'aria-hidden': 'true' }, '↗'), h('span', { class: 'visually-hidden' }, ' ' + t('ссылка.наружу')));
     });

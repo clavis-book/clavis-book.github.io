@@ -131,11 +131,15 @@
     if (step === 'проверка' || (meta['интерактив'] || '') === 'сортировка') {
       // Конец слова — пробел или конец строки: граница слова в регулярных выражениях JavaScript знает только латиницу.
       const heading = step === 'проверка' ? /^Вопрос(?=\s|$)/i : /^Случай(?=\s|$)/i;
-      const { intro, blocks } = MK.splitBlocks(body, name => heading.test(name));
+      // У сортировки текст после игры — блок «## После игры» в конце файла (разбор, который выдал бы ответы заранее).
+      const outro = /^После игры$/i;
+      const { intro, blocks } = MK.splitBlocks(body, name => heading.test(name) || (step !== 'проверка' && outro.test(name)));
       file.kind = step === 'проверка' ? 'questions' : 'cases';
-      file.records = blocks.map(b => Object.assign(MK.parseQuestion(b.lines), {
+      file.records = blocks.filter(b => !outro.test(b.name)).map(b => Object.assign(MK.parseQuestion(b.lines), {
         id: b.name.replace(heading, '').trim(), line: b.line }));
       file.items = MK.parseProse(intro, { problems });
+      const after = blocks.find(b => outro.test(b.name));
+      if (after) file.outro = MK.parseProse(after.lines, { problems });
     } else file.items = MK.parseProse(body, { problems });
     App.files.push(file);
     return file;

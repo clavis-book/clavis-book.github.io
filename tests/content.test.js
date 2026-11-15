@@ -288,9 +288,13 @@ test('ссылки на файлы учебника: только из папк�
   // Проверка страницы не пропускает выход из папки, параметры и чужие расширения.
   const step = 'content/ru/r11-prepod.js';
   const bad = read(step).replace('[То же простым текстом](docs/lab/Лабораторная_WiFi.md)',
-    '[а](docs/../index.html) [б](docs/lab/run.exe) [в](docs/lab/x.md?y=1)');
+    '[а](docs/../index.html) [б](docs/lab/run.exe) [в](docs/lab/x.md?y=1) [г](docs/%2e%2e/index.md) ' +
+    '[д](docs/a/%2E%2E/%2e%2e/x.md) [е](docs/a\\..\\x.md) [ж](docs/%E0%A4%A.md)');
   const texts = local(validate(loadApp({ [step]: bad })).issues).map(i => i.text).filter(t => /файл учебника/.test(t));
-  assert.equal(texts.length, 3, JSON.stringify(texts));
+  assert.equal(texts.length, 7, JSON.stringify(texts));
+  // Та же проверка решает, станет ли ссылка ссылкой на странице (js/ui.js): закодированные точки не проходят.
+  assert.equal(App.markup.isDocLink('docs/%2e%2e/index.md'), false);
+  assert.equal(App.markup.isDocLink('docs/lab/Лабораторная_WiFi.docx'), true);
   assert.deepEqual(local(validate(App).issues), []);
 });
 

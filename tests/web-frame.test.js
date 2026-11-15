@@ -50,7 +50,8 @@ const STORAGE = ['localStorage', 'sessionStorage', 'indexedDB'];
 // Элементы, которые сами что-то загружают или отправляют: страница их не создаёт.
 const LOADING_TAGS = 'img|iframe|script|link|object|embed|audio|video|source|track|form|base|meta|picture|image|use';
 
-const QR_ADDRESS_READS = /location\.href\.split\('#'\)\[0\]|location\.protocol === 'file:'|\.test\(location\.hostname\)/;
+// Единственная строка кода, которой разрешено читать адрес страницы (js/interactives.js, функция pageBase).
+const QR_PAGE_BASE = String.raw`function pageBase() { return location.protocol === 'file:' ? null : { url: location.origin + location.pathname, local: /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) }; }`;
 
 function problems(rel, text) {
   const found = [];
@@ -65,9 +66,9 @@ function problems(rel, text) {
   if (/^(?:js|models)\//.test(rel)) {
     // Единственное исключение (14.11.2026): QR-код в js/interactives.js кодирует ссылку на
     // учебник для телефонов, поэтому читает адрес страницы до # и проверяет, не файл ли это на диске и не
-    // localhost (такой адрес телефон не откроет). Только эти три чтения и только в этом файле; менять адрес
-    // по-прежнему нельзя — это ловит правило «переход на другой адрес» ниже.
-    const reads = rel === 'js/interactives.js' ? text.split(QR_ADDRESS_READS).join('') : text;
+    // localhost (такой адрес телефон не откроет). С 15.11.2026 — только функция pageBase слово в слово
+    // и только в этом файле; менять адрес по-прежнему нельзя — это ловит правило «переход на другой адрес» ниже.
+    const reads = rel === 'js/interactives.js' ? text.split(QR_PAGE_BASE).join('') : text;
     if (/\blocation\b(?!\.hash\b)/.test(reads)) found.push(rel + ': из адреса страницы разрешён только location.hash');
     if (/(?<![\w$.])(?<!function\s+)open\s*\(|(?:window|self|globalThis|top|parent)\s*\??\.\s*open\b/.test(text)) found.push(rel + ': новое окно из кода');
     if (/\.click\s*\(/.test(text)) found.push(rel + ': нажатие из кода');
@@ -122,10 +123,11 @@ test('проверка проверяющего: на плохом коде ср
   // Разрешённое — не ловится.
   assert.deepEqual(problems('js/proba.js', "// здесь нет сети и вставки HTML-строк\nel.replaceChildren(h('p', {}, text));\nsetTimeout(tick, 55);\nlocation.hash = 'karta';\nif (location.hash === '#x') s('line', { x1: 0 });\nfunction open(id) { return id; }\nApp.missionView.open(r.mission);"), []);
   assert.deepEqual(problems('js/ui.js', "localStorage.getItem('kilt:v1')"), []);
-  // Исключение для QR-кода — только три чтения адреса и только в js/interactives.js.
-  const qrReads = "const base = location.href.split('#')[0];\nconst local = location.protocol === 'file:' || /^x$/.test(location.hostname);";
-  assert.deepEqual(problems('js/interactives.js', qrReads), []);
-  assert.ok(problems('js/proba.js', qrReads).length, 'чтение адреса вне js/interactives.js');
+  // Исключение для QR-кода — только функция pageBase слово в слово и только в js/interactives.js.
+  assert.deepEqual(problems('js/interactives.js', '  ' + QR_PAGE_BASE + '\n'), []);
+  assert.ok(problems('js/proba.js', QR_PAGE_BASE).length, 'чтение адреса вне js/interactives.js');
+  assert.ok(problems('js/interactives.js', QR_PAGE_BASE.replace('location.pathname', 'location.href')).length, 'изменённая pageBase');
+  assert.ok(problems('js/interactives.js', QR_PAGE_BASE + "\nconst b = location.href.split('#')[0];").length, 'прежнее чтение адреса');
   for (const line of ['const q = location.search;', 'location.href = u;', "const p = location.pathname;", 'send(location.href);']) {
     assert.ok(problems('js/interactives.js', line).length, 'не поймано в js/interactives.js: ' + line);
   }

@@ -154,10 +154,15 @@
   // ---------- QR-код страницы раздела: преподаватель показывает его на экране, студенты открывают с телефона ----------
   // Код строится из адреса, по которому открыт учебник (js/qr.js, без сети). Адрес файла на диске или
   // localhost телефон не откроет — тогда под кодом сказано, что он заработает после публикации учебника.
+  // pageBase — единственное место в коде, где читается адрес страницы (кроме части после #): только протокол,
+  // хост и путь, без имени пользователя, параметров и якоря. Для файла на диске — null: путь к нему содержит
+  // имя пользователя Windows, и на проекторе его показывать незачем.
+  function pageBase() { return location.protocol === 'file:' ? null : { url: location.origin + location.pathname, local: /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) }; }
   App.interactives.qr = { render(box) {
     const TARGETS = [['r11-prosto', 'qr.цель.просто'], ['missiya-r11-m01', 'qr.цель.миссия'], ['r11-proverka', 'qr.цель.проверка']];
-    const base = location.href.split('#')[0];
-    const local = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    const page = pageBase();
+    if (!page) { box.append(h('h3', { class: 'ia-title' }, t('qr.заголовок')), h('p', { class: 'note warn-note' }, t('qr.файл'))); return; }
+    const base = page.url, local = page.local;
     const name = newId('qr');
     let target = TARGETS[0][0], big = false;
     const pic = h('div', { class: 'qr-pic' }), addr = h('p', { class: 'qr-addr', lang: 'en' });
@@ -166,7 +171,10 @@
     } }, t('qr.крупно'));
     function draw() {
       const url = base + '#' + target;
-      const q = QR.encode(url), n = q.size + 8;      // поле по 4 модуля с каждой стороны — его требует стандарт
+      let q;
+      // Адрес длиннее 666 байт в QR-код уровня M версии до 20 не помещается: тогда — пояснение, а страница строится дальше.
+      try { q = QR.encode(url); } catch (e) { pic.replaceChildren(h('p', { class: 'note warn-note' }, t('qr.длинный'))); addr.textContent = url; return; }
+      const n = q.size + 8;      // поле по 4 модуля с каждой стороны — его требует стандарт
       let d = '';
       q.modules.forEach((row, y) => row.forEach((dark, x) => { if (dark) d += 'M' + (x + 4) + ' ' + (y + 4) + 'h1v1h-1z'; }));
       const label = TARGETS.find(x => x[0] === target)[1];

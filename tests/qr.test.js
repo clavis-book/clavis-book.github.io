@@ -29,7 +29,7 @@ test('QR: матрицы совпадают с эталоном модуль в 
 });
 
 test('QR: слишком длинный текст и не текст — понятная ошибка, а не испорченный код', () => {
-  assert.throws(() => QR.encode('a'.repeat(700)), RangeError);
+  assert.throws(() => QR.encode('a'.repeat(667)), RangeError);   // первая длина сверх версии 20
   assert.throws(() => QR.encode(42), TypeError);
   assert.equal(QR.encode('a'.repeat(666)).version, 20);
 });

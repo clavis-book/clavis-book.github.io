@@ -161,16 +161,21 @@
     if (file.kind === 'questions') body.append(h('h1', {}, t('ступень.proverka')), ...V.renderProse(file.items, ctx).filter(Boolean), App.quiz(file, ctx, secId));
     else {
       body.append(...V.renderProse(file.items, ctx, { file, mission: missionCard }).filter(Boolean));
-      if (file.kind === 'cases') { const box = h('div', { class: 'ia' }); App.interactives.sort.render(box, ctx, file); body.append(box); }
+      if (file.kind === 'cases') {
+        const box = h('div', { class: 'ia' }); App.interactives.sort.render(box, ctx, file); body.append(box);
+        if (file.outro) body.append(...V.renderProse(file.outro, ctx).filter(Boolean));
+      }
     }
     if (own) body.append(h('p', { class: 'banner' }, t('ступень.перевод-черновой'), ' ',
       h('button', { type: 'button', class: 'btn ghost', onclick: () => { forceRu = key; route(); } }, t('ступень.читать-по-русски'))));
     if (forceRu === key) body.append(h('p', { class: 'banner' }, h('button', { type: 'button', class: 'btn ghost', onclick: () => { forceRu = null; route(); } }, t('ступень.вернуть-перевод'))));
-    const next = CM.STEPS[CM.STEPS.indexOf(info) + 1];
-    if (file.kind !== 'questions' && next) {
+    // «Дальше» ведёт только по ступеням студента: «Преподавателю» — в разделе преподавателя, студента туда не уводим.
+    // После последней ступени студента — «Готово» и возврат к карте разделов.
+    const next = CM.STEPS.slice(CM.STEPS.indexOf(info) + 1).find(st => st.slug !== 'prepod');
+    if (file.kind !== 'questions' && info.slug !== 'prepod') {
       body.append(h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn', onclick: () => {
-        App.markDone(secId, info.slug); location.hash = secId + '-' + next.slug;
-      } }, t('ступень.готово-дальше', { ступень: t('ступень.' + next.slug) }))));
+        App.markDone(secId, info.slug); location.hash = next ? secId + '-' + next.slug : 'karta';
+      } }, next ? t('ступень.готово-дальше', { ступень: t('ступень.' + next.slug) }) : t('ступень.готово-к-карте'))));
     }
     body.append(V.sourcesSlot(ctx));
     page(head, steps, body);
