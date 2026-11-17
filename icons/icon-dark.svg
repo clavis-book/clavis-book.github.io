@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<!-- Значок учебника Clavis: замок с ключом на дужке, изумрудный лист — для тёмной темы. © Малика Ерболқызы, 2026. Лицензия CC BY 4.0. -->
+<!-- Значок учебника Clavis: замок с ключом на дужке, изумрудный лист — для тёмной темы. © Малика Ерболқызы, 2026. Лицензия CC BY 4.0. Растр тени — целые точки, к краю тени мельче; на размерах до 192 px его нет. -->
 <defs>
+<style>@media (max-width: 192px) { .dots { display: none; } }</style>
 <clipPath id="tile"><rect width="512" height="512" rx="112"/></clipPath>
 <clipPath id="body"><path d="M112 236L350 229L365 244L369 421L354 437L110 443L93 428L98 251Z"/></clipPath>
 <clipPath id="upper"><rect x="250" y="120" width="110" height="64"/></clipPath>
-<pattern id="dots" width="13" height="13" patternUnits="userSpaceOnUse" patternTransform="rotate(31)"><circle cx="4" cy="4" r="2.7" fill="#12A05C"/></pattern>
 </defs>
 <g clip-path="url(#tile)">
 <rect width="512" height="512" fill="#12A05C"/>
@@ -13,7 +13,8 @@
 <g transform="translate(-30 6) rotate(-6 240 270)">
 <g transform="translate(9 8)">
 <path d="M112 236L350 229L365 244L369 421L354 437L110 443L93 428L98 251Z" fill="#F6EFDD"/>
-<g clip-path="url(#body)"><path d="M369 250L369 443L150 443Z" fill="url(#dots)"/><path d="M98 251L112 236L196 233.500L116 330Z" fill="#FFFFFF"/></g>
+<g clip-path="url(#body)"><path d="M98 251L112 236L196 233.500L116 330Z" fill="#FFFFFF"/></g>
+<g class="dots" fill="#12A05C"><circle cx="215.1" cy="406.9" r="1.01"/><circle cx="208.4" cy="418.1" r="1.26"/><circle cx="246.4" cy="380.2" r="1.05"/><circle cx="239.7" cy="391.3" r="1.29"/><circle cx="233.0" cy="402.5" r="1.54"/><circle cx="226.3" cy="413.6" r="1.79"/><circle cx="277.6" cy="353.5" r="1.08"/><circle cx="270.9" cy="364.6" r="1.33"/><circle cx="264.2" cy="375.7" r="1.58"/><circle cx="257.5" cy="386.9" r="1.83"/><circle cx="250.8" cy="398.0" r="2.08"/><circle cx="244.1" cy="409.2" r="2.32"/><circle cx="237.4" cy="420.3" r="2.57"/><circle cx="308.8" cy="326.7" r="1.12"/><circle cx="302.1" cy="337.9" r="1.37"/><circle cx="295.4" cy="349.0" r="1.62"/><circle cx="288.7" cy="360.2" r="1.87"/><circle cx="282.1" cy="371.3" r="2.11"/><circle cx="275.4" cy="382.4" r="2.36"/><circle cx="268.7" cy="393.6" r="2.61"/><circle cx="262.0" cy="404.7" r="2.86"/><circle cx="255.3" cy="415.9" r="2.90"/><circle cx="340.1" cy="300.0" r="1.16"/><circle cx="333.4" cy="311.1" r="1.41"/><circle cx="326.7" cy="322.3" r="1.65"/><circle cx="320.0" cy="333.4" r="1.90"/><circle cx="313.3" cy="344.6" r="2.15"/><circle cx="306.6" cy="355.7" r="2.40"/><circle cx="299.9" cy="366.9" r="2.65"/><circle cx="293.2" cy="378.0" r="2.89"/><circle cx="286.5" cy="389.1" r="2.90"/><circle cx="279.8" cy="400.3" r="2.90"/><circle cx="273.1" cy="411.4" r="2.90"/><circle cx="344.5" cy="317.8" r="2.19"/><circle cx="337.8" cy="329.0" r="2.44"/><circle cx="331.1" cy="340.1" r="2.68"/><circle cx="324.4" cy="351.3" r="2.90"/><circle cx="317.7" cy="362.4" r="2.90"/><circle cx="311.0" cy="373.5" r="2.90"/><circle cx="304.3" cy="384.7" r="2.90"/><circle cx="297.6" cy="395.8" r="2.90"/><circle cx="290.9" cy="407.0" r="2.90"/><circle cx="284.3" cy="418.1" r="2.90"/><circle cx="342.3" cy="346.8" r="2.90"/><circle cx="335.6" cy="358.0" r="2.90"/><circle cx="328.9" cy="369.1" r="2.90"/><circle cx="322.2" cy="380.2" r="2.90"/><circle cx="315.5" cy="391.4" r="2.90"/><circle cx="308.8" cy="402.5" r="2.90"/><circle cx="302.1" cy="413.7" r="2.90"/><circle cx="346.7" cy="364.7" r="2.90"/><circle cx="340.0" cy="375.8" r="2.90"/><circle cx="333.3" cy="386.9" r="2.90"/><circle cx="326.6" cy="398.1" r="2.90"/><circle cx="319.9" cy="409.2" r="2.90"/><circle cx="344.5" cy="393.6" r="2.90"/><circle cx="337.8" cy="404.8" r="2.90"/><circle cx="331.1" cy="415.9" r="2.90"/></g>
 </g>
 <path d="M134 252L133 168L150 117L189 82L230 69L273 81L311 118L326 168L327 252L284 252L284 172L271 141L252 121L230 114L207 121L189 140L176 172L177 252Z" fill="#191C1A"/>
 <path d="M148 154L161 123L188 99L185 108L169 126L157 155Z" fill="#12A05C"/>

@@ -23,6 +23,7 @@
   // [текст](https://адрес) — ссылка наружу, [текст](#адрес) — ссылка внутри учебника,
   // [текст](docs/папка/файл.docx) — файл из папки docs/ учебника (лабораторная, памятки),
   // [[экзамен: l14-07]] или [[экзамен: l14-03, l14-06]] — здесь разобран контрольный вопрос из карты к экзамену.
+  // ^[текст] — боковая заметка (splitNotes ниже).
   const INLINE = /\*\*([^*]+)\*\*|\*([^*]+)\*|\[\[ист:\s*(\w+)([^\]]*)\]\]|\[проверить(?::\s*([^\]]+))?\]|\[([^\]]+)\]\(((?:https:\/\/|#|docs\/)[^)\s]+)\)|\[\[экзамен:\s*([\w-]+(?:\s*,\s*[\w-]+)*)\s*\]\]/g;
   // Файл учебника: только папка docs/, без «..», параметров и якорей, с расширением документа.
   const DOC_LINK = /^docs\/(?:[^/?#.\s][^/?#\s]*\/)*[^/?#\s]+\.(?:docx|md|pdf)$/;
@@ -33,8 +34,41 @@
     return DOC_LINK.test(href) && DOC_LINK.test(plain) && !/\.\.|\\|:|%/.test(plain);
   }
 
-  function inlineTokens(text) {
-    const out = [], s = String(text == null ? '' : text);
+  // Боковая заметка ^[текст заметки] — как встроенная сноска Pandoc. Внутри — та же строчная разметка (жирный,
+  // источники, ссылки), поэтому конец заметки ищется по парным скобкам: «]]» источника заметку не закрывает.
+  // Заметка внутри заметки не раскрывается: её «^[» остаётся текстом, и проверка об этом говорит.
+  // Возвращает куски строки: { text } — обычный текст, { note } — текст заметки, { open } — «^[» без пары.
+  function splitNotes(s) {
+    const parts = [];
+    let last = 0, i = s.indexOf('^[');
+    while (i >= 0) {
+      let depth = 0, j = i + 1;
+      for (; j < s.length; j++) {
+        if (s[j] === '[') depth++;
+        else if (s[j] === ']' && --depth === 0) break;
+      }
+      if (j >= s.length) { parts.push({ text: s.slice(last, i) }, { open: true, text: s.slice(i) }); return parts; }
+      if (i > last) parts.push({ text: s.slice(last, i) });
+      parts.push({ note: s.slice(i + 2, j) });
+      last = j + 1;
+      i = s.indexOf('^[', last);
+    }
+    if (last < s.length) parts.push({ text: s.slice(last) });
+    return parts;
+  }
+
+  // Куски строки: текст, **жирный**, источники, ссылки… и боковые заметки { t: 'note', text } (без вложенных).
+  // Для подсчётов и проверок есть allTokens — те же куски вместе с содержимым заметок.
+  function inlineTokens(text, inNote) {
+    const s = String(text == null ? '' : text);
+    if (inNote || s.indexOf('^[') < 0) return plainTokens(s);
+    return splitNotes(s).flatMap(p => p.note != null ? [{ t: 'note', text: p.note }] : plainTokens(p.text));
+  }
+  function allTokens(text) {
+    return inlineTokens(text).flatMap(x => x.t === 'note' ? [x, ...inlineTokens(x.text, true)] : [x]);
+  }
+  function plainTokens(s) {
+    const out = [];
     const re = new RegExp(INLINE.source, 'g');
     let last = 0, m;
     while ((m = re.exec(s))) {
@@ -53,7 +87,7 @@
 
   // Все ссылки на источники в тексте: [{ id, loc }].
   function citedIds(text) {
-    return inlineTokens(text).filter(x => x.t === 'cite').map(x => ({ id: x.id, loc: x.loc }));
+    return allTokens(text).filter(x => x.t === 'cite').map(x => ({ id: x.id, loc: x.loc }));
   }
 
   // «nist_800_97 §3.2.2, ieee80211i_2004» → [{ id, loc }].
@@ -234,7 +268,7 @@
     // До этой проверки дело доходит редко: то, что стоит в ${…}, браузер выполняет как код ещё при загрузке
     // файла, и сюда попадает уже результат. Главный запрет — тест по исходному тексту (tests/content.test.js).
     if (/\$\{/.test(raw)) add('ошибка', 'текст', 'сочетание знаков $ и { в тексте запрещено: то, что стоит в таких скобках, браузер выполняет как код');
-    for (const tok of inlineTokens(raw)) {
+    for (const tok of allTokens(raw)) {
       if (tok.t === 'cite') {
         stats.cited++;
         const s = c.sources && c.sources[tok.id];
@@ -250,17 +284,24 @@
         add('ошибка', 'ссылки', 'ссылка «' + tok.href + '»: файл учебника — только из папки docs/, вида docs/папка/файл.docx (.md, .pdf)');
       }
     }
+    // Боковая заметка ^[…]: без пары скобок она осталась бы на странице сырым текстом; заметка в заметке не
+    // раскрывается; пустая заметка — пустая кнопка.
+    for (const part of splitNotes(String(raw))) {
+      if (part.open) add('ошибка', 'заметки', 'заметка «^[» не закрыта скобкой «]»: «' + part.text.slice(0, 40) + '…»');
+      else if (part.note != null && !part.note.trim()) add('ошибка', 'заметки', 'пустая заметка ^[]');
+      else if (part.note != null && part.note.includes('^[')) add('ошибка', 'заметки', 'заметка внутри заметки не раскроется: «' + part.note.slice(0, 40) + '…»');
+    }
     // Метка, которую разметка не узнала (не тот разделитель, внутри **…** или *…*), на странице осталась бы
     // сырым текстом и не попала бы в счётчик карты к экзамену.
     const written = (raw.match(/\[\[\s*экзамен/g) || []).length;
-    const known = inlineTokens(raw).filter(x => x.t === 'exam').length;
+    const known = allTokens(raw).filter(x => x.t === 'exam').length;
     if (written !== known) add('ошибка', 'метки', 'метка [[экзамен: …]] записана неверно: коды через запятую, например [[экзамен: l14-03, l14-06]], и не внутри **…** или *…*');
     return stats;
   }
 
   App.markup = {
     LANGS, CALLOUTS, QUESTION_KEYS,
-    inlineTokens, isDocLink, citedIds, parseSourceList, shortName, currentScript,
+    inlineTokens, allTokens, splitNotes, isDocLink, citedIds, parseSourceList, shortName, currentScript,
     parseHeader, splitBlocks, parseFields, parseProse, parseQuestion, questionProblems, checkText
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = App;

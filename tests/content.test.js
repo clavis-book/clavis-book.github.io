@@ -374,3 +374,18 @@ test('метки в двойных скобках набраны кирилли�
     assert.deepEqual([...read(s).matchAll(/\[\[\s*[a-z][^\]]*\]\]/gi)].map(m => m[0]), [], s);
   }
 });
+
+test('боковая заметка ^[…]: внутри работает строчная разметка, ошибки автора ловятся', () => {
+  const { markup: MK } = loadApp();
+  const toks = MK.inlineTokens('Wi-Fi.^[Слово — товарный знак [[ист: wfa_security подвал]] **объединения**.] Дальше.');
+  assert.deepEqual([...toks.map(x => x.t)], ['text', 'note', 'text']);
+  assert.equal(toks[1].text, 'Слово — товарный знак [[ист: wfa_security подвал]] **объединения**.');
+  // Источник внутри заметки учитывается в списке источников и в проверке.
+  assert.deepEqual(JSON.parse(JSON.stringify(MK.citedIds('а^[б [[ист: wfa_security]]]'))), [{ id: 'wfa_security', loc: '' }]);
+  const problems = raw => { const out = []; MK.checkText(raw, (lvl, where, text) => out.push(where + ': ' + text), {}); return out; };
+  assert.deepEqual(problems('Текст^[заметка] и ещё^[вторая].'), []);
+  assert.match(problems('Текст^[без конца').join(), /не закрыта/);
+  assert.match(problems('Текст^[ ] дальше').join(), /пустая заметка/);
+  assert.match(problems('Текст^[внешняя ^[внутренняя]] дальше').join(), /внутри заметки/);
+  assert.match(problems('Текст^[источник [[ист: no_such_source]]]').join(), /нет источника/);
+});

@@ -223,10 +223,70 @@ main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 .callout.important .lab { color: var(--ink-2); }
 @media (max-width: 34rem) { .callout { grid-template-columns: 1fr; } }
 
-.sources { font-size: .88rem; color: var(--ink-2); border-top: 1px solid var(--rule); padding-top: .8rem; }
-.sources ol { margin: .4rem 0 0; padding-left: 1.4rem; display: grid; gap: .3rem; }
-.sources li { min-width: 0; overflow-wrap: anywhere; }   /* длинные имена файлов лекций не раздвигают страницу на телефоне */
+.sources { font-size: .88rem; color: var(--ink-2); border-top: 1px solid var(--rule); padding-top: .4rem; }
+/* Список источников свёрнут: строка «Источники (n)» с треугольником, по нажатию — нумерованный список. */
+.sources > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: .45rem; min-height: 2.75rem; }
+.sources > summary::-webkit-details-marker { display: none; }
+.sources > summary::before { content: ""; width: .45rem; height: .45rem; border: solid var(--green); border-width: 0 2px 2px 0; transform: rotate(-45deg); flex: none; }
+.sources[open] > summary::before { transform: rotate(45deg); }
+@media (prefers-reduced-motion: no-preference) { .sources > summary::before { transition: transform .15s; } }
+.sources-h { display: inline; }
+.sources-n { font-family: var(--body); font-weight: 400; font-size: .85em; color: var(--ink-2); }
+.sources ol { margin: .2rem 0 .4rem; padding-left: 1.4rem; display: grid; gap: .3rem; }
+.sources li { min-width: 0; overflow-wrap: anywhere; }   /* длинные названия и адреса не раздвигают страницу на телефоне */
 .sources li.flash { background: var(--green-soft); }
+.sources li:focus { outline: none; }
+
+/* Боковые заметки ^[…] (образец — Tufte CSS). Номер в строке — охрой, чтобы не путать с источником [n] зелёным.
+   Узкий экран: заметка свёрнута и раскрывается по нажатию под строкой. Широкий (поля есть): заметка на полях
+   справа от своей строки, всегда видна. Ширину «есть ли поля» меряет контейнер .page — так учитывается и
+   увеличение «Группой». */
+.sn-mark { font-size: .72em; vertical-align: super; line-height: 0; margin-left: .05em; }
+.sn-ref { border: 0; background: none; color: var(--ochre); padding: 0 .1em; cursor: pointer; font-weight: 700; }
+/* Номер в строке мелкий, а нажимать его пальцем: невидимая зона вокруг шире самого номера (не меньше 24 px). */
+.sn-ref, .cite button { position: relative; }
+.nobr { white-space: nowrap; }
+.sn-ref::after, .cite button::after { content: ""; position: absolute; inset: -9px -7px; }
+.sn { display: none; }
+.sn.open {
+  display: block; margin: .45rem 0 .35rem; padding: .5rem .75rem; border-left: 3px solid var(--ochre); border-radius: 0 var(--r) var(--r) 0;
+  background: var(--ochre-soft); color: var(--ink); font-family: var(--body); font-style: normal; font-size: .9rem; line-height: 1.45;
+}
+.sn-no { font-weight: 700; color: var(--ochre); }
+@keyframes sn-flash { from { background-color: var(--ochre-soft); } to { background-color: transparent; } }
+@media (prefers-reduced-motion: no-preference) { .sn.flash { animation: sn-flash 1.4s ease-out; } }
+.page { container-type: inline-size; }
+@container (min-width: 60rem) {
+  /* Абсолютно, а не float: абзацы — элементы сетки .prose и удержали бы float в себе. Без top заметка стоит по высоте
+     своей строки; соседние заметки раздвигает js/ui.js (layoutNotes). */
+  .sheet.prose { position: relative; }
+  .prose .sn, .prose .sn.open {
+    display: inline; position: absolute; right: calc(-14rem - 2.25rem); width: 14rem; margin: .15rem 0 0; padding: 0 0 0 .6rem;
+    border: 0; border-left: 2px solid var(--ochre-soft); border-radius: 0; background: none;
+    color: var(--ink-2); font-family: var(--body); font-style: normal; font-size: .84rem; line-height: 1.45;
+  }
+}
+
+/* Карточка источника (popover): на широком экране — под номером, на телефоне — лист снизу. */
+.cite-card {
+  position: fixed; inset: auto; margin: 0; width: min(24rem, calc(100vw - 16px)); max-height: 70vh; overflow: auto;
+  padding: .55rem 1rem 1rem; background: var(--sheet); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--r);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .2); font-size: .95rem; line-height: 1.5;
+}
+.cite-card:focus { outline: none; }
+.cc-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.cc-h { margin: 0; font-size: .82rem; font-weight: 700; letter-spacing: .02em; color: var(--ink-2); }
+.cc-x { border: 0; background: none; color: var(--ink-2); font-size: 1.6rem; line-height: 1; width: 2.75rem; height: 2.75rem; margin-right: -.75rem; cursor: pointer; border-radius: var(--r); }
+.cc-src { margin: .1rem 0 .8rem; overflow-wrap: anywhere; }
+.cc-src .src-more { margin-top: .4rem; }
+.cc-all { width: 100%; }
+@media (max-width: 40rem) {
+  .cite-card { inset: auto 0 0 0; width: 100%; max-width: none; max-height: 75dvh; border-radius: 14px 14px 0 0; border-width: 1px 0 0;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)); padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+  .cite-card::backdrop { background: rgba(0, 0, 0, .28); }
+}
+@media (prefers-reduced-motion: no-preference) and (max-width: 40rem) { .cite-card:popover-open { animation: sheet-in .22s ease-out; } }
+@media (forced-colors: active) { .cite-card { border: 1px solid CanvasText; } }
 
 /* ---------- Интерактивы ---------- */
 .ia { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); padding: 1rem; display: grid; gap: .8rem; min-width: 0; }

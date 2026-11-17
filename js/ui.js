@@ -77,23 +77,36 @@
   const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let ctxCount = 0;
   // Контекст ссылок одного экрана: номера источников и место для их списка.
-  const newCtx = () => ({ cites: [], prefix: 'src' + (++ctxCount) + '-', slot: null });
+  const newCtx = () => ({ cites: [], notes: 0, prefix: 'src' + (++ctxCount) + '-', slot: null });
 
-  function inline(text, ctx) {
-    return MK.inlineTokens(text).map(tok => {
-      if (tok.t === 'text') return tok.text;
-      if (tok.t === 'b') return h('strong', {}, tok.text);
-      if (tok.t === 'i') return h('em', {}, tok.text);
-      if (tok.t === 'cite') return cite(tok.id, tok.loc, ctx);
-      if (tok.t === 'check') return h('span', { class: 'check', title: tok.what ? t('ист.что-сверить', { что: tok.what }) : t('ист.не-сверено') }, t('ист.проверить'));
-      if (tok.t === 'exam') return tok.ids.map(examMark);
-      if (tok.href[0] === '#') return h('a', { href: tok.href }, tok.text);
-      // Файл из папки docs/ учебника: открывается или скачивается браузером, интернет не нужен.
-      // Ссылка, которую не пропускает проверка (выход из папки, чужое расширение), остаётся простым текстом.
-      if (tok.href.startsWith('docs/') && !MK.isDocLink(tok.href)) return tok.text;
-      if (tok.href.startsWith('docs/')) return h('a', { href: tok.href }, tok.text, h('span', { class: 'ext', 'aria-hidden': 'true' }, '⤓'), h('span', { class: 'visually-hidden' }, ' ' + t('ссылка.файл')));
-      return h('a', { href: tok.href, target: '_blank', rel: 'noopener noreferrer' }, tok.text, h('span', { class: 'ext', 'aria-hidden': 'true' }, '↗'), h('span', { class: 'visually-hidden' }, ' ' + t('ссылка.наружу')));
-    });
+  function inline(text, ctx, inNote) {
+    const out = [];
+    for (const tok of MK.inlineTokens(text, inNote)) {
+      // Номер заметки — кнопка, а перед кнопкой браузер может перенести строку. Последнее слово перед номером и
+      // сам номер стоят в одной неразрывной группе, чтобы номер не оказался один в начале строки.
+      if (tok.t === 'note') {
+        const [mark, note] = sideNote(tok.text, ctx);
+        const prev = out.length && typeof out[out.length - 1] === 'string' ? out[out.length - 1].match(/^([\s\S]*?)(\S+)$/) : null;
+        if (prev) { out[out.length - 1] = prev[1]; out.push(h('span', { class: 'nobr' }, prev[2], mark), note); } else out.push(mark, note);
+        continue;
+      }
+      out.push(inlineToken(tok, ctx));
+    }
+    return out;
+  }
+  function inlineToken(tok, ctx) {
+    if (tok.t === 'text') return tok.text;
+    if (tok.t === 'b') return h('strong', {}, tok.text);
+    if (tok.t === 'i') return h('em', {}, tok.text);
+    if (tok.t === 'cite') return cite(tok.id, tok.loc, ctx);
+    if (tok.t === 'check') return h('span', { class: 'check', title: tok.what ? t('ист.что-сверить', { что: tok.what }) : t('ист.не-сверено') }, t('ист.проверить'));
+    if (tok.t === 'exam') return tok.ids.map(examMark);
+    if (tok.href[0] === '#') return h('a', { href: tok.href }, tok.text);
+    // Файл из папки docs/ учебника: открывается или скачивается браузером, интернет не нужен.
+    // Ссылка, которую не пропускает проверка (выход из папки, чужое расширение), остаётся простым текстом.
+    if (tok.href.startsWith('docs/') && !MK.isDocLink(tok.href)) return tok.text;
+    if (tok.href.startsWith('docs/')) return h('a', { href: tok.href }, tok.text, h('span', { class: 'ext', 'aria-hidden': 'true' }, '⤓'), h('span', { class: 'visually-hidden' }, ' ' + t('ссылка.файл')));
+    return h('a', { href: tok.href, target: '_blank', rel: 'noopener noreferrer' }, tok.text, h('span', { class: 'ext', 'aria-hidden': 'true' }, '↗'), h('span', { class: 'visually-hidden' }, ' ' + t('ссылка.наружу')));
   }
   // Метка «здесь разобран контрольный вопрос»: ссылка на карту к экзамену, «лекция 14–15, вопрос 7».
   function examMark(id) {
@@ -101,6 +114,57 @@
     if (!q) return '';
     return [' ', h('a', { class: 'exam-mark', href: '#ekzamen' }, t('экзамен.метка', { лекция: q.lectureNo, n: Number(id.slice(-2)) }))];
   }
+  // Боковая заметка ^[…] (образец — заметки на полях Tufte CSS): номер в строке и текст заметки сразу за ним.
+  // На широком экране (поля есть, css/base.css) заметка стоит на полях рядом со своей строкой, кнопка номера только
+  // подсвечивает её; на узком заметка свёрнута и раскрывается по нажатию под строкой, второе нажатие сворачивает.
+  // Читалка экрана слышит у кнопки «Примечание 1» и состояние «развёрнуто» или «свёрнуто».
+  function sideNote(text, ctx) {
+    const no = ctx ? ++ctx.notes : 0, id = (ctx ? ctx.prefix : 'sn-' + (++ctxCount) + '-') + 'n' + no;
+    const mark = String(no || '*');
+    const note = h('span', { class: 'sn', id, role: 'note' }, h('span', { class: 'sn-no', 'aria-hidden': 'true' }, mark), ' ', inline(text, ctx, true));
+    const btn = h('button', { type: 'button', class: 'sn-ref', 'aria-controls': id, 'aria-expanded': 'false', 'aria-label': t('заметка.номер', { n: mark }),
+      onclick: () => {
+        if (onMargin(note)) return flash(note);
+        note.classList.toggle('open');
+        syncNote(btn, note);
+      } }, mark);
+    // Заметка на полях видна всегда; состояние кнопки сверяется, когда заметка попала на страницу (экран строится
+    // не сразу — ждём до 2 секунд), при фокусе на кнопке и при смене ширины.
+    let tries = 0;
+    const first = () => { if (btn.isConnected) layoutSoon(); else if (++tries < 40) setTimeout(first, 50); };
+    setTimeout(first, 0);
+    btn.addEventListener('focus', () => syncNote(btn, note));
+    return [h('sup', { class: 'sn-mark' }, btn), note];
+  }
+  const onMargin = note => getComputedStyle(note).position === 'absolute';
+  // Заметки на полях стоят по высоте своих строк; если две строки рядом, нижняя заметка сдвигается вниз, чтобы
+  // не наползать на верхнюю.
+  function layoutNotes() {
+    let prev = null;
+    document.querySelectorAll('.sn-ref').forEach(b => syncNote(b, document.getElementById(b.getAttribute('aria-controls'))));
+    for (const note of document.querySelectorAll('.prose .sn')) {
+      note.style.removeProperty('translate');
+      if (!onMargin(note)) continue;
+      const r = note.getBoundingClientRect();
+      if (prev && prev.box === note.offsetParent && r.top < prev.bottom + 8) note.style.setProperty('translate', '0 ' + Math.ceil(prev.bottom + 8 - r.top) + 'px');
+      prev = { box: note.offsetParent, bottom: note.getBoundingClientRect().bottom };
+    }
+  }
+  function syncNote(btn, note) {
+    if (btn.isConnected && note) btn.setAttribute('aria-expanded', String(onMargin(note) || note.classList.contains('open')));
+  }
+  let layoutQueued = false;
+  function layoutSoon() { if (!layoutQueued) { layoutQueued = true; setTimeout(() => { layoutQueued = false; layoutNotes(); }, 0); } }
+  // Ширина окна, стили и шрифты (они подгружаются после первого показа и меняют высоту строк) — заметки встают
+  // заново, состояние кнопок сверяется.
+  window.addEventListener('resize', layoutSoon);
+  window.addEventListener('load', layoutSoon);
+  if (document.fonts) document.fonts.addEventListener('loadingdone', layoutSoon);
+  function flash(el) { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+
+  // Ссылка на источник [n] — как сноска Википедии. Нажатие открывает карточку источника (как на мобильной Википедии):
+  // название, место, сверен ли он, что сверено и переход к списку источников экрана. Браузер без popover
+  // (старые версии) по-прежнему прокручивает к записи в списке.
   function cite(id, loc, ctx) {
     if (!ctx) return '';
     let n = ctx.cites.findIndex(c => c.id === id);
@@ -108,43 +172,107 @@
     if (loc && !ctx.cites[n].locs.includes(loc)) ctx.cites[n].locs.push(loc);
     const src = App.sourceList[id], no = n + 1;
     return h('sup', { class: 'cite' },
-      h('button', { type: 'button', 'aria-label': t('ист.номер', { n: no }) + (src ? ': ' + src.label : ''), onclick: () => {
-        const li = document.getElementById(ctx.prefix + no);
-        if (!li) return;
-        li.scrollIntoView({ block: 'center', behavior: reduceMotion() ? 'auto' : 'smooth' });
-        li.classList.remove('flash'); void li.offsetWidth; li.classList.add('flash');
-      } }, String(no)),
+      h('button', { type: 'button', 'aria-haspopup': HAS_POPOVER ? 'dialog' : null, 'aria-label': t('ист.номер', { n: no }) + (src ? ': ' + src.label : ''),
+        onclick: ev => (HAS_POPOVER ? openCard(ev.currentTarget, ctx, no, loc) : toSource(ctx, no)) }, '[' + no + ']'),
       src && !src.verified ? h('span', { class: 'check' }, t('ист.проверить')) : null);
   }
-  // Список источников экрана: название (ссылкой, если есть адрес https://), места, дата сверки; по нажатию —
-  // что именно сверено.
-  function sourcesBlock(ctx, title) {
+  const HAS_POPOVER = typeof HTMLElement !== 'undefined' && 'popover' in HTMLElement.prototype;
+  // Перейти к записи n в списке источников экрана: список раскрывается, запись — по центру и подсвечена.
+  function toSource(ctx, no) {
+    const li = document.getElementById(ctx.prefix + no);
+    if (!li) return;
+    const box = li.closest('details');
+    if (box) box.open = true;
+    li.scrollIntoView({ block: 'center', behavior: reduceMotion() ? 'auto' : 'smooth' });
+    li.setAttribute('tabindex', '-1');
+    li.focus({ preventScroll: true });
+    flash(li);
+  }
+  // Сведения об источнике — одни для карточки и для списка: название (ссылкой, если есть адрес https://), места
+  // в тексте, «сверено» или «[проверить]», по нажатию — что именно сверено. Имя файла лекции студенту не нужно:
+  // название лекции и её раздела уже стоят в названии источника.
+  function sourceParts(s, locs) {
+    const name = s.title || s.label;
+    const what = [s.section, s.note].filter(Boolean).join(' ');
+    return [
+      /^https:\/\//.test(s.url || '') ? h('a', { href: s.url, target: '_blank', rel: 'noopener noreferrer' }, name, h('span', { class: 'ext', 'aria-hidden': 'true' }, '↗'), h('span', { class: 'visually-hidden' }, ' ' + t('ссылка.наружу'))) : name,
+      locs.length ? ', ' + locs.join('; ') : '',
+      // «Сверено» — только у сверенного источника; у остальных дата не показывается, стоит пометка «[проверить]».
+      s.checked && s.verified ? h('span', { class: 'src-note' }, ' — ' + t('ист.сверено', { когда: s.checked })) : '',
+      s.verified ? '' : [' ', h('span', { class: 'check' }, t('ист.проверить'))],
+      what ? h('details', { class: 'src-more' }, h('summary', {}, t('ист.что-сверено')), h('p', { class: 'src-note' }, what)) : null];
+  }
+
+  // Карточка источника — одна на страницу, всплывающая (popover): закрывается крестиком, Esc и нажатием мимо неё,
+  // фокус возвращается на номер, с которого её открыли. На телефоне выезжает снизу, на широком экране — под номером.
+  let card = null, cardFrom = null;
+  function openCard(btn, ctx, no, loc) {
+    const c = ctx.cites[no - 1], s = App.sourceList[c.id];
+    if (!card) {
+      card = h('div', { id: 'cite-card', class: 'cite-card', popover: 'auto', role: 'dialog', tabindex: '-1', 'aria-labelledby': 'cite-card-h' });
+      card.addEventListener('toggle', ev => {
+        if (ev.newState !== 'closed') return;
+        const from = cardFrom; cardFrom = null;
+        const lost = !document.activeElement || document.activeElement === document.body || card.contains(document.activeElement);
+        if (from && from.isConnected && lost) from.focus();
+      });
+      document.body.append(card);
+    }
+    // Второе нажатие на тот же номер закрывает карточку; на другой номер — показывает его источник.
+    if (card.matches(':popover-open')) {
+      const same = cardFrom === btn;
+      card.hidePopover();
+      if (same) return;
+    }
+    const listed = ctx.slot || document.getElementById(ctx.prefix + no);
+    fill(card,
+      h('div', { class: 'cc-top' },
+        h('p', { class: 'cc-h', id: 'cite-card-h' }, t('ист.номер', { n: no })),
+        h('button', { type: 'button', class: 'cc-x', 'aria-label': t('окно.закрыть'), onclick: () => card.hidePopover() }, '×')),
+      s ? h('p', { class: 'cc-src', lang: 'ru' }, sourceParts(s, loc ? [loc] : [])) : h('p', {}, t('ист.нет', { код: c.id })),
+      listed ? h('button', { type: 'button', class: 'btn ghost cc-all', onclick: () => { cardFrom = null; card.hidePopover(); toSource(ctx, no); } }, t('ист.к-списку')) : null);
+    cardFrom = btn;
+    card.showPopover();
+    placeCard(btn);
+    card.focus({ preventScroll: true });
+  }
+  // На широком экране карточка стоит под номером (или над ним, если внизу нет места) и не выходит за края окна.
+  // На узком её место — низ экрана, это задают стили.
+  function placeCard(btn) {
+    card.style.removeProperty('left'); card.style.removeProperty('top');
+    if (!window.matchMedia('(min-width: 40.01rem)').matches) return;
+    const r = btn.getBoundingClientRect(), w = card.offsetWidth, ht = card.offsetHeight, gap = 8;
+    const x = Math.min(Math.max(gap, r.left - 24), window.innerWidth - w - gap);
+    const below = r.bottom + gap, above = r.top - ht - gap;
+    const y = below + ht <= window.innerHeight - gap || above < gap ? Math.min(below, Math.max(gap, window.innerHeight - ht - gap)) : above;
+    card.style.setProperty('left', x + 'px'); card.style.setProperty('top', y + 'px');
+  }
+  window.addEventListener('resize', () => { if (card && card.matches(':popover-open')) placeCard(cardFrom || card); });
+
+  // Список источников экрана — свёрнут: «Источники (n)»; номера те же, что у ссылок [n] в тексте.
+  function sourcesBlock(ctx, title, open) {
     if (!ctx || !ctx.cites.length) return null;
-    return h('section', { class: 'sources', 'aria-label': title || t('ист.заголовок') },
-      h('h2', { class: 'sources-h' }, title || t('ист.заголовок')),
+    return h('details', { class: 'sources', open: open || null },
+      h('summary', {}, h('h2', { class: 'sources-h' }, title || t('ист.заголовок'), ' ', h('span', { class: 'sources-n' }, '(' + num(ctx.cites.length) + ')'))),
       h('ol', {}, ctx.cites.map((c, i) => {
         const s = App.sourceList[c.id];
         if (!s) return h('li', { id: ctx.prefix + (i + 1) }, t('ист.нет', { код: c.id }));
-        const name = s.title || s.label;
-        const what = [s.section, s.note].filter(Boolean).join(' ');
-        return h('li', { id: ctx.prefix + (i + 1), lang: 'ru' },
-          /^https:\/\//.test(s.url || '') ? h('a', { href: s.url, target: '_blank', rel: 'noopener noreferrer' }, name) : name,
-          s.file ? h('span', { class: 'src-note' }, ' (' + s.file + ')') : '',
-          c.locs.length ? ', ' + c.locs.join('; ') : '',
-          // «Сверено» — только у сверенного источника; у остальных дата не показывается, стоит пометка «[проверить]».
-          s.checked && s.verified ? h('span', { class: 'src-note' }, ' — ' + t('ист.сверено', { когда: s.checked })) : '',
-          s.verified ? '' : h('span', { class: 'check' }, t('ист.проверить')),
-          what ? h('details', { class: 'src-more' }, h('summary', {}, t('ист.что-сверено')), h('p', { class: 'src-note' }, what)) : null);
+        return h('li', { id: ctx.prefix + (i + 1), lang: 'ru' }, sourceParts(s, c.locs));
       })));
   }
-  // Место для списка источников, который пополняется по ходу (вопросы, интерактивы).
+  // Место для списка источников, который пополняется по ходу (вопросы, интерактивы). Раскрытый список при
+  // пополнении остаётся раскрытым.
   function sourcesSlot(ctx, title) {
     ctx.slot = h('div', { class: 'sources-slot' });
     ctx.slotTitle = title;
     refreshSources(ctx);
     return ctx.slot;
   }
-  function refreshSources(ctx) { if (ctx && ctx.slot) ctx.slot.replaceChildren(sourcesBlock(ctx, ctx.slotTitle) || ''); }
+  function refreshSources(ctx) {
+    if (!ctx || !ctx.slot) return;
+    const was = ctx.slot.querySelector('details.sources');
+    ctx.slot.replaceChildren(sourcesBlock(ctx, ctx.slotTitle, was && was.open) || '');
+  }
 
   // ---------- Выноски и обычный текст ----------
   function callout(kind, label, kids) {

@@ -111,7 +111,7 @@
     const where = {};
     for (const f of App.files) {
       if ((f.meta['язык'] || 'ru') !== 'ru') continue;
-      for (const tok of MK.inlineTokens(f.raw)) if (tok.t === 'exam') for (const id of tok.ids) {
+      for (const tok of MK.allTokens(f.raw)) if (tok.t === 'exam') for (const id of tok.ids) {
         const list = where[id] = where[id] || [];
         const place = { section: f.meta['раздел'], step: (f.meta['ступень'] || '').toLowerCase() };
         if (!list.some(x => x.section === place.section && x.step === place.step)) list.push(place);

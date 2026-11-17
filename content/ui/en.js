@@ -100,6 +100,8 @@ App.ui(String.raw`
 ист.нет: Source “{код}” is not in the source list
 ист.сверено: verified {когда}
 ист.что-сверено: What was verified
+ист.к-списку: All sources on this page
+заметка.номер: Note {n}
 ссылка.наружу: (opens in a new tab, needs internet)
 выноска.заметка: Note
 интерактив.нет: The “{имя}” interactive is not ready yet.

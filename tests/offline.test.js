@@ -457,8 +457,11 @@ test('манифест: название, запуск в своём окне и
 });
 
 test('значки: в картинке SVG нет ни скриптов, ни ссылок наружу; страница подключает манифест и значок для iPhone', () => {
+  // Единственное исключение (17.11.2026): одна строка стиля слово в слово — на размерах до 192 px растр тени
+  // (группа .dots) не рисуется, мелкие точки там сливаются в грязь. Любой другой стиль тест не пропустит.
+  const DOTS_STYLE = '<style>@media (max-width: 192px) { .dots { display: none; } }</style>';
   for (const f of fs.readdirSync(path.join(ROOT, 'icons')).filter(f => f.endsWith('.svg'))) {
-    const svg = read('icons/' + f);
+    const svg = read('icons/' + f).split(DOTS_STYLE).join('');
     assert.doesNotMatch(svg, /<script|<foreignObject|\son\w+=|javascript:|<image|<use[^>]+href="(?!#)|@import|url\(\s*["']?(?!#)/i, 'icons/' + f);
     // Белый список: в значке — только фигуры. Чего здесь нет (ссылки, анимация, стили, текст), то не пройдёт.
     const tags = [...new Set([...svg.replace(/<!--[\s\S]*?-->/g, '').matchAll(/<([a-zA-Z][\w:-]*)/g)].map(m => m[1]))];
