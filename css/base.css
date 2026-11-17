@@ -3,7 +3,8 @@
    (палитра «графит + зелёный»). Lora — заголовки, PT Sans — текст, PT Mono — шифровки и числа.
    Шрифты лежат в fonts/ (лицензия SIL OFL 1.1 — рядом), страница ничего не загружает из сети.
    Размер шрифта на :root не задаётся: страница объявляет text-scale, и браузер сам учитывает
-   системный размер текста. Режим «Группой» увеличивает содержимое через zoom на #app. */
+   системный размер текста. Режим «Группой» и «Размер текста» в настройках увеличивают содержимое через zoom
+   на #app (верхняя полоса остаётся прежней). */
 @font-face { font-family: "Lora"; src: url("../fonts/Lora.ttf") format("truetype"); font-weight: 400 700; font-style: normal; font-display: swap; }
 @font-face { font-family: "Lora"; src: url("../fonts/Lora-Italic.ttf") format("truetype"); font-weight: 400 700; font-style: italic; font-display: swap; }
 @font-face { font-family: "PT Sans"; src: url("../fonts/PTSans-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
@@ -168,7 +169,7 @@ main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem .9rem; border-radius: var(--r); border: 1px solid var(--green); background: var(--green); color: var(--green-ink); cursor: pointer; text-decoration: none; font-weight: 600; font-size: .95rem; }
 .btn.ghost { background: transparent; color: var(--green); }
 .btn:disabled, .btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
-.chip { display: inline-block; padding: .05rem .5rem; border-radius: 999px; font-size: .8rem; border: 1px solid var(--rule); color: var(--ink-2); white-space: nowrap; }
+.chip { display: inline-block; justify-self: start; padding: .05rem .5rem; border-radius: 999px; font-size: .8rem; border: 1px solid var(--rule); color: var(--ink-2); white-space: nowrap; }
 .chip.ok { border-color: var(--green); color: var(--green); }
 .chip.warn { border-color: var(--ochre); color: var(--ochre); background: var(--ochre-soft); }
 .chip.bad { border-color: var(--red); color: var(--red); background: var(--red-soft); }
@@ -230,23 +231,29 @@ main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 .sources > summary::before { content: ""; width: .45rem; height: .45rem; border: solid var(--green); border-width: 0 2px 2px 0; transform: rotate(-45deg); flex: none; }
 .sources[open] > summary::before { transform: rotate(45deg); }
 @media (prefers-reduced-motion: no-preference) { .sources > summary::before { transition: transform .15s; } }
-.sources-h { display: inline; }
+.prose .sources-h { margin: 0; padding: 0; border: 0; }   /* не заголовок части: без черты и отступов .prose h2 */
+.src-legend { margin: 0 0 .3rem; font-size: .85rem; }
 .sources-n { font-family: var(--body); font-weight: 400; font-size: .85em; color: var(--ink-2); }
 .sources ol { margin: .2rem 0 .4rem; padding-left: 1.4rem; display: grid; gap: .3rem; }
 .sources li { min-width: 0; overflow-wrap: anywhere; }   /* длинные названия и адреса не раздвигают страницу на телефоне */
 .sources li.flash { background: var(--green-soft); }
 .sources li:focus { outline: none; }
 
-/* Боковые заметки ^[…] (образец — Tufte CSS). Номер в строке — охрой, чтобы не путать с источником [n] зелёным.
-   Узкий экран: заметка свёрнута и раскрывается по нажатию под строкой. Широкий (поля есть): заметка на полях
+/* Боковые заметки ^[…] (образец — Tufte CSS). Номер в строке — охрой, чтобы не путать с источником [n] зелёным,
+   слово перед ним подчёркнуто охряным пунктиром. Узкий экран: заметка открывается в карточке (лист снизу, js/ui.js);
+   браузер без popover раскрывает её под строкой. Широкий (поля есть): заметка на полях
    справа от своей строки, всегда видна. Ширину «есть ли поля» меряет контейнер .page — так учитывается и
    увеличение «Группой». */
 .sn-mark { font-size: .72em; vertical-align: super; line-height: 0; margin-left: .05em; }
 .sn-ref { border: 0; background: none; color: var(--ochre); padding: 0 .1em; cursor: pointer; font-weight: 700; }
-/* Номер в строке мелкий, а нажимать его пальцем: невидимая зона вокруг шире самого номера (не меньше 24 px). */
+/* Номер в строке мелкий, а нажимать его пальцем: невидимая зона вокруг шире самого номера (не меньше 24 px).
+   Номер поднят над строкой, поэтому зона уходит больше вниз, чем вверх, и не заходит на строку выше. */
 .sn-ref, .cite button { position: relative; }
 .nobr { white-space: nowrap; }
-.sn-ref::after, .cite button::after { content: ""; position: absolute; inset: -9px -7px; }
+.sn-ref::after, .cite button::after { content: ""; position: absolute; inset: -5px -10px -13px; }
+.sn-anchor { cursor: pointer; }
+.sn-word { text-decoration: underline dotted var(--ochre); text-decoration-thickness: 1.5px; text-underline-offset: .22em; }
+.cc-note { margin: .1rem 0 .4rem; }
 .sn { display: none; }
 .sn.open {
   display: block; margin: .45rem 0 .35rem; padding: .5rem .75rem; border-left: 3px solid var(--ochre); border-radius: 0 var(--r) var(--r) 0;
@@ -260,6 +267,8 @@ main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
   /* Абсолютно, а не float: абзацы — элементы сетки .prose и удержали бы float в себе. Без top заметка стоит по высоте
      своей строки; соседние заметки раздвигает js/ui.js (layoutNotes). */
   .sheet.prose { position: relative; }
+  .sn-word { text-decoration: none; }   /* заметка и так видна на полях */
+  .sn-anchor { cursor: auto; }
   .prose .sn, .prose .sn.open {
     display: inline; position: absolute; right: calc(-14rem - 2.25rem); width: 14rem; margin: .15rem 0 0; padding: 0 0 0 .6rem;
     border: 0; border-left: 2px solid var(--ochre-soft); border-radius: 0; background: none;
@@ -362,6 +371,11 @@ h1:focus, h2:focus, h3:focus { outline: none; }
 #app { display: block; }
 #app:focus { outline: none; }
 .group #app { zoom: 1.22; }
+/* Размер текста (окно «Настройки»): крупнее всё содержимое, как в режиме «Группой»; вместе с ним — произведение. */
+:root[data-size="l"] #app { zoom: 1.125; }
+:root[data-size="xl"] #app { zoom: 1.25; }
+:root.group[data-size="l"] #app { zoom: 1.3725; }
+:root.group[data-size="xl"] #app { zoom: 1.525; }
 .lead { font-size: 1.12rem; }
 .crumbs { font-size: .9rem; }
 .section-title { font-family: var(--display); font-weight: 600; font-size: 1.32rem; }

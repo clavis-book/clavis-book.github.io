@@ -264,6 +264,22 @@
 
   // ---------- Маршруты ----------
   function route() {
+    clearTimeout(keepTimer);
+    V.closeCard();
+    const back = history.state && Number.isFinite(history.state.y) ? history.state.y : 0;
+    render();
+    if (back > 0) window.scrollTo(0, back);
+  }
+  // «Назад» и «Вперёд» возвращают туда, где читатель был: на ту же высоту страницы. Высота хранится в записи
+  // истории браузера (history.state) и обновляется, когда прокрутка остановилась; новая страница (ссылка)
+  // открывается сверху.
+  let keepTimer = 0;
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.addEventListener('scroll', () => {
+    clearTimeout(keepTimer);
+    keepTimer = setTimeout(() => history.replaceState({ y: Math.round(window.scrollY) }, ''), 200);
+  }, { passive: true });
+  function render() {
     const r = CM.parseRoute(location.hash);
     if (r.page === 'step' && forceRu && forceRu !== r.section + '-' + r.step) forceRu = null;
     // Ступень «Преподавателю» — в разделе преподавателя верхней полосы, остальные ступени — в разделе студента.

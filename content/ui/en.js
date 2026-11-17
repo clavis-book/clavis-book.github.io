@@ -33,6 +33,10 @@ App.ui(String.raw`
 настройки.тема.auto: Match system
 настройки.тема.light: Light
 настройки.тема.dark: Dark
+настройки.размер: Text size
+настройки.размер.m: Normal
+настройки.размер.l: Larger
+настройки.размер.xl: Largest
 настройки.группой: Class at a shared screen
 настройки.прогресс: Progress
 настройки.стёрто: Progress and the collection on this device have been erased.
@@ -101,6 +105,8 @@ App.ui(String.raw`
 ист.сверено: verified {когда}
 ист.что-сверено: What was verified
 ист.к-списку: All sources on this page
+ист.сверено-без-даты: verified
+ист.пояснение: “Verified”: the statement in the text has been checked against the cited source; “[to check]”: not checked yet.
 заметка.номер: Note {n}
 ссылка.наружу: (opens in a new tab, needs internet)
 выноска.заметка: Note

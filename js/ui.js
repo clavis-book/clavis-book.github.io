@@ -83,12 +83,32 @@
     const out = [];
     for (const tok of MK.inlineTokens(text, inNote)) {
       // Номер заметки — кнопка, а перед кнопкой браузер может перенести строку. Последнее слово перед номером и
-      // сам номер стоят в одной неразрывной группе, чтобы номер не оказался один в начале строки.
+      // сам номер стоят в одной неразрывной группе, чтобы номер не оказался один в начале строки. Слово подчёркнуто
+      // пунктиром и тоже открывает заметку: по маленькому номеру пальцем попасть трудно. С клавиатуры заметку
+      // открывает кнопка номера.
       if (tok.t === 'note') {
-        const [mark, note] = sideNote(tok.text, ctx);
+        const [mark, note, act] = sideNote(tok.text, ctx);
         const prev = out.length && typeof out[out.length - 1] === 'string' ? out[out.length - 1].match(/^([\s\S]*?)(\S+)$/) : null;
-        if (prev) { out[out.length - 1] = prev[1]; out.push(h('span', { class: 'nobr' }, prev[2], mark), note); } else out.push(mark, note);
+        if (prev) {
+          out[out.length - 1] = prev[1];
+          out.push(h('span', { class: 'nobr sn-anchor', onclick: ev => { if (!mark.contains(ev.target)) act(); } }, h('span', { class: 'sn-word' }, prev[2]), mark), note);
+        } else out.push(mark, note);
         continue;
+      }
+      // Номер источника не уходит на новую строку один (кнопка в строке — сама место переноса, неразрывный пробел
+      // тут не помогает): последнее слово, номер и знак препинания сразу за ним стоят в одной неразрывной группе.
+      const last = out[out.length - 1];
+      if (tok.t === 'cite') {
+        const el = inlineToken(tok, ctx);
+        const prev = typeof last === 'string' ? last.match(/^([\s\S]*?)(\S+)\s*$/) : null;
+        if (el && prev) { out[out.length - 1] = prev[1]; out.push(h('span', { class: 'nobr' }, prev[2] + ' ', el)); }
+        else if (el && last instanceof Element && last.classList.contains('nobr')) last.append(el);
+        else out.push(el);
+        continue;
+      }
+      if (tok.t === 'text' && last instanceof Element && last.classList.contains('nobr') && !last.classList.contains('sn-anchor')) {
+        const punct = tok.text.match(/^[.,;:!?…)»]+/);
+        if (punct) { last.append(punct[0]); if (tok.text.length > punct[0].length) out.push(tok.text.slice(punct[0].length)); continue; }
       }
       out.push(inlineToken(tok, ctx));
     }
@@ -116,25 +136,29 @@
   }
   // Боковая заметка ^[…] (образец — заметки на полях Tufte CSS): номер в строке и текст заметки сразу за ним.
   // На широком экране (поля есть, css/base.css) заметка стоит на полях рядом со своей строкой, кнопка номера только
-  // подсвечивает её; на узком заметка свёрнута и раскрывается по нажатию под строкой, второе нажатие сворачивает.
+  // подсвечивает её. На узком заметка открывается по нажатию в той же карточке, что и источник (лист снизу, как
+  // на мобильной Википедии): текст не разрывается посреди фразы, а закрывают карточку нажатие мимо, крестик, Esc,
+  // повторное нажатие на номер и кнопка «Назад» телефона. Браузер без popover раскрывает заметку под строкой.
   // Читалка экрана слышит у кнопки «Примечание 1» и состояние «развёрнуто» или «свёрнуто».
+  // Возвращает номер, саму заметку и действие «открыть» (его зовёт и слово перед номером).
   function sideNote(text, ctx) {
     const no = ctx ? ++ctx.notes : 0, id = (ctx ? ctx.prefix : 'sn-' + (++ctxCount) + '-') + 'n' + no;
     const mark = String(no || '*');
     const note = h('span', { class: 'sn', id, role: 'note' }, h('span', { class: 'sn-no', 'aria-hidden': 'true' }, mark), ' ', inline(text, ctx, true));
-    const btn = h('button', { type: 'button', class: 'sn-ref', 'aria-controls': id, 'aria-expanded': 'false', 'aria-label': t('заметка.номер', { n: mark }),
-      onclick: () => {
-        if (onMargin(note)) return flash(note);
-        note.classList.toggle('open');
-        syncNote(btn, note);
-      } }, mark);
+    const act = () => {
+      if (onMargin(note)) return flash(note);
+      if (HAS_POPOVER) return showCard(btn, t('заметка.номер', { n: mark }), h('p', { class: 'cc-note' }, inline(text, ctx, true)));
+      note.classList.toggle('open');
+      syncNote(btn, note);
+    };
+    const btn = h('button', { type: 'button', class: 'sn-ref', 'aria-controls': id, 'aria-expanded': 'false', 'aria-label': t('заметка.номер', { n: mark }), onclick: act }, mark);
     // Заметка на полях видна всегда; состояние кнопки сверяется, когда заметка попала на страницу (экран строится
     // не сразу — ждём до 2 секунд), при фокусе на кнопке и при смене ширины.
     let tries = 0;
     const first = () => { if (btn.isConnected) layoutSoon(); else if (++tries < 40) setTimeout(first, 50); };
     setTimeout(first, 0);
     btn.addEventListener('focus', () => syncNote(btn, note));
-    return [h('sup', { class: 'sn-mark' }, btn), note];
+    return [h('sup', { class: 'sn-mark' }, btn), note, act];
   }
   const onMargin = note => getComputedStyle(note).position === 'absolute';
   // Заметки на полях стоят по высоте своих строк; если две строки рядом, нижняя заметка сдвигается вниз, чтобы
@@ -151,7 +175,7 @@
     }
   }
   function syncNote(btn, note) {
-    if (btn.isConnected && note) btn.setAttribute('aria-expanded', String(onMargin(note) || note.classList.contains('open')));
+    if (btn.isConnected && note) btn.setAttribute('aria-expanded', String(onMargin(note) || note.classList.contains('open') || cardShows(btn)));
   }
   let layoutQueued = false;
   function layoutSoon() { if (!layoutQueued) { layoutQueued = true; setTimeout(() => { layoutQueued = false; layoutNotes(); }, 0); } }
@@ -197,44 +221,73 @@
     return [
       /^https:\/\//.test(s.url || '') ? h('a', { href: s.url, target: '_blank', rel: 'noopener noreferrer' }, name, h('span', { class: 'ext', 'aria-hidden': 'true' }, '↗'), h('span', { class: 'visually-hidden' }, ' ' + t('ссылка.наружу'))) : name,
       locs.length ? ', ' + locs.join('; ') : '',
-      // «Сверено» — только у сверенного источника; у остальных дата не показывается, стоит пометка «[проверить]».
-      s.checked && s.verified ? h('span', { class: 'src-note' }, ' — ' + t('ист.сверено', { когда: s.checked })) : '',
+      // «Сверено» — только у сверенного источника (с датой, если она записана; лекции сверены без даты); у
+      // остальных стоит пометка «[проверить]».
+      s.verified ? h('span', { class: 'src-note' }, ' — ' + (s.checked ? t('ист.сверено', { когда: s.checked }) : t('ист.сверено-без-даты'))) : '',
       s.verified ? '' : [' ', h('span', { class: 'check' }, t('ист.проверить'))],
       what ? h('details', { class: 'src-more' }, h('summary', {}, t('ист.что-сверено')), h('p', { class: 'src-note' }, what)) : null];
   }
 
-  // Карточка источника — одна на страницу, всплывающая (popover): закрывается крестиком, Esc и нажатием мимо неё,
-  // фокус возвращается на номер, с которого её открыли. На телефоне выезжает снизу, на широком экране — под номером.
-  let card = null, cardFrom = null;
-  function openCard(btn, ctx, no, loc) {
-    const c = ctx.cites[no - 1], s = App.sourceList[c.id];
-    if (!card) {
-      card = h('div', { id: 'cite-card', class: 'cite-card', popover: 'auto', role: 'dialog', tabindex: '-1', 'aria-labelledby': 'cite-card-h' });
-      card.addEventListener('toggle', ev => {
-        if (ev.newState !== 'closed') return;
-        const from = cardFrom; cardFrom = null;
-        const lost = !document.activeElement || document.activeElement === document.body || card.contains(document.activeElement);
-        if (from && from.isConnected && lost) from.focus();
-      });
-      document.body.append(card);
-    }
-    // Второе нажатие на тот же номер закрывает карточку; на другой номер — показывает его источник.
-    if (card.matches(':popover-open')) {
-      const same = cardFrom === btn;
-      card.hidePopover();
-      if (same) return;
-    }
-    const listed = ctx.slot || document.getElementById(ctx.prefix + no);
+  // Карточка — одна на страницу, всплывающая (popover): источник [n], а на узком экране и боковая заметка.
+  // Закрывается крестиком, Esc, нажатием мимо неё и повторным нажатием на тот же номер; фокус возвращается на
+  // номер, с которого её открыли. На телефоне выезжает снизу, на широком экране — под номером. Переход на другую
+  // страницу (в том числе «Назад») её закрывает (closeCard, js/app.js).
+  let card = null, cardFrom = null, pressedOn = null;
+  const cardShows = btn => !!card && cardFrom === btn && card.matches(':popover-open');
+  // Номер, с которого открыта карточка, и состояние «развёрнуто» у кнопки заметки.
+  function setFrom(btn) {
+    if (cardFrom && cardFrom !== btn && cardFrom.classList.contains('sn-ref')) cardFrom.setAttribute('aria-expanded', 'false');
+    cardFrom = btn;
+    if (btn && btn.classList.contains('sn-ref')) btn.setAttribute('aria-expanded', 'true');
+  }
+  function ensureCard() {
+    if (card) return;
+    card = h('div', { id: 'cite-card', class: 'cite-card', popover: 'auto', role: 'dialog', tabindex: '-1', 'aria-labelledby': 'cite-card-h' });
+    // Фокус уходит на номер ещё до закрытия: иначе браузер сам вернёт его туда, где он был до открытия карточки
+    // (после ссылки внутри заметки это начало страницы).
+    card.addEventListener('beforetoggle', ev => {
+      if (ev.newState === 'closed' && cardFrom && cardFrom.isConnected && card.contains(document.activeElement)) cardFrom.focus({ preventScroll: true });
+    });
+    card.addEventListener('toggle', ev => {
+      if (ev.newState !== 'closed') return;
+      const from = cardFrom;
+      setFrom(null);
+      const lost = !document.activeElement || document.activeElement === document.body || card.contains(document.activeElement);
+      if (from && from.isConnected && lost) from.focus({ preventScroll: true });
+    });
+    document.body.append(card);
+  }
+  // Повторное нажатие на номер, с которого открыта карточка, должно её закрыть. Но браузер закрывает карточку уже
+  // в самом нажатии (оно «мимо» неё), и к событию click она закрыта — без этой отметки click открыл бы её снова.
+  // Поэтому ещё при касании запоминаем, была ли карточка открыта именно с этого номера (или его слова).
+  document.addEventListener('pointerdown', ev => {
+    const hit = ev.target.closest ? ev.target.closest('.sn-anchor, .sn-ref, .cite button') : null;
+    pressedOn = hit && card && cardFrom && card.matches(':popover-open') && (hit === cardFrom || hit.contains(cardFrom)) ? cardFrom : null;
+  }, true);
+  function showCard(btn, head, ...body) {
+    ensureCard();
+    const open = card.matches(':popover-open');
+    if (pressedOn === btn || (open && cardFrom === btn)) { pressedOn = null; if (open) card.hidePopover(); return; }
+    pressedOn = null;
+    // Ссылка внутри карточки (источник в тексте заметки) меняет только её содержимое: фокус потом вернётся на
+    // прежний номер в тексте.
+    if (!(open && card.contains(btn))) setFrom(btn);
     fill(card,
       h('div', { class: 'cc-top' },
-        h('p', { class: 'cc-h', id: 'cite-card-h' }, t('ист.номер', { n: no })),
+        h('p', { class: 'cc-h', id: 'cite-card-h' }, head),
         h('button', { type: 'button', class: 'cc-x', 'aria-label': t('окно.закрыть'), onclick: () => card.hidePopover() }, '×')),
-      s ? h('p', { class: 'cc-src', lang: 'ru' }, sourceParts(s, loc ? [loc] : [])) : h('p', {}, t('ист.нет', { код: c.id })),
-      listed ? h('button', { type: 'button', class: 'btn ghost cc-all', onclick: () => { cardFrom = null; card.hidePopover(); toSource(ctx, no); } }, t('ист.к-списку')) : null);
-    cardFrom = btn;
-    card.showPopover();
-    placeCard(btn);
+      body);
+    if (!card.matches(':popover-open')) card.showPopover();
+    placeCard(cardFrom);
     card.focus({ preventScroll: true });
+  }
+  function closeCard() { if (card && card.matches(':popover-open')) card.hidePopover(); }
+  function openCard(btn, ctx, no, loc) {
+    const c = ctx.cites[no - 1], s = App.sourceList[c.id];
+    const listed = ctx.slot || document.getElementById(ctx.prefix + no);
+    showCard(btn, t('ист.номер', { n: no }),
+      s ? h('p', { class: 'cc-src', lang: 'ru' }, sourceParts(s, loc ? [loc] : [])) : h('p', {}, t('ист.нет', { код: c.id })),
+      listed ? h('button', { type: 'button', class: 'btn ghost cc-all', onclick: () => { setFrom(null); card.hidePopover(); toSource(ctx, no); } }, t('ист.к-списку')) : null);
   }
   // На широком экране карточка стоит под номером (или над ним, если внизу нет места) и не выходит за края окна.
   // На узком её место — низ экрана, это задают стили.
@@ -254,6 +307,7 @@
     if (!ctx || !ctx.cites.length) return null;
     return h('details', { class: 'sources', open: open || null },
       h('summary', {}, h('h2', { class: 'sources-h' }, title || t('ист.заголовок'), ' ', h('span', { class: 'sources-n' }, '(' + num(ctx.cites.length) + ')'))),
+      h('p', { class: 'src-legend' }, t('ист.пояснение')),
       h('ol', {}, ctx.cites.map((c, i) => {
         const s = App.sourceList[c.id];
         if (!s) return h('li', { id: ctx.prefix + (i + 1) }, t('ист.нет', { код: c.id }));
@@ -305,7 +359,9 @@
     const root = document.documentElement;
     if (S.theme === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', S.theme);
     root.classList.toggle('group', S.group);
+    if (S.size === 'm') root.removeAttribute('data-size'); else root.setAttribute('data-size', S.size);
     root.lang = lang();
+    layoutSoon();   // размер текста меняет высоту строк — заметки на полях встают заново
   }
   const view = { onChange: null };
   // Шапка строится заново, поэтому фокус клавиатуры возвращается на ту же кнопку (data-focus), а не теряется.
@@ -390,6 +446,6 @@
   };
 
   Object.assign(view, { S, store, h, fill, svg, t, rich, plural, num, locale, lang, newCtx, inline, cite, sourcesBlock, sourcesSlot, refreshSources, fadeRow,
-    callout, renderProse, applyPrefs, renderTop, setPref, focusTitle, collection, reduceMotion });
+    callout, renderProse, applyPrefs, renderTop, setPref, focusTitle, collection, reduceMotion, closeCard });
   App.view = view;
 })();

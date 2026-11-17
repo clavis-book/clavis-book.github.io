@@ -463,7 +463,8 @@ test('значки: в картинке SVG нет ни скриптов, ни �
   for (const f of fs.readdirSync(path.join(ROOT, 'icons')).filter(f => f.endsWith('.svg'))) {
     const svg = read('icons/' + f).split(DOTS_STYLE).join('');
     assert.doesNotMatch(svg, /<script|<foreignObject|\son\w+=|javascript:|<image|<use[^>]+href="(?!#)|@import|url\(\s*["']?(?!#)/i, 'icons/' + f);
-    // Белый список: в значке — только фигуры. Чего здесь нет (ссылки, анимация, стили, текст), то не пройдёт.
+    // Белый список: в значке — только фигуры. Чего здесь нет (ссылки, анимация, текст, стили — кроме строки выше),
+    // то не пройдёт. В maskable-512.png растра нет нарочно: на рабочем столе Android замок мельче, точки сливаются.
     const tags = [...new Set([...svg.replace(/<!--[\s\S]*?-->/g, '').matchAll(/<([a-zA-Z][\w:-]*)/g)].map(m => m[1]))];
     const SHAPES = ['svg', 'defs', 'clipPath', 'pattern', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polygon', 'polyline'];
     assert.deepEqual(tags.filter(tag => !SHAPES.includes(tag)), [], 'icons/' + f + ': лишние элементы');

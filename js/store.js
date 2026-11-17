@@ -14,6 +14,9 @@
   // перенос старых данных. Данные более новой версии не трогаем (см. read).
   const SCHEMA = 1;
   const THEMES = ['auto', 'light', 'dark'];
+  // Размер текста (окно «Настройки»): обычный, крупнее, ещё крупнее. Добавлен 17.11.2026 без смены схемы: у старой
+  // записи его нет — читается как обычный; прежняя версия учебника незнакомое поле просто отбрасывает.
+  const SIZES = ['m', 'l', 'xl'];
   const RESULTS = ['right', 'retry', 'hint', 'wrong'];   // ответ «Проверь себя»: сразу, не сразу, с подсказкой, неверно
   // Постоянные коды разделов, ступеней, вопросов, карточек и наград: r11, prosto, r11-01, r11-m01:nonce.
   const CODE = /^[a-z0-9][a-z0-9:._-]{0,63}$/;
@@ -47,6 +50,7 @@
         lang: langs.includes(s.lang) ? s.lang : langs[0],
         theme: THEMES.includes(s.theme) ? s.theme : 'auto',
         group: s.group === true,
+        size: SIZES.includes(s.size) ? s.size : 'm',
         progress: nested(s.progress, x => x === true),
         quiz: nested(s.quiz, x => RESULTS.includes(x)),
         collection: { cards: codes(col.cards), badges: codes(col.badges) }
@@ -76,6 +80,6 @@
     return null;
   }
 
-  App.storage = { KEY, OLD_KEYS, SCHEMA, THEMES, RESULTS, CODE, read, load };
+  App.storage = { KEY, OLD_KEYS, SCHEMA, THEMES, SIZES, RESULTS, CODE, read, load };
   if (typeof module !== 'undefined' && module.exports) module.exports = App;
 })(typeof self !== 'undefined' ? self : globalThis);

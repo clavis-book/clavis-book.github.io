@@ -242,20 +242,20 @@ test('заметка «//» в шапке файла — не ключ и не �
 test('хранилище: у данных есть версия схемы, испорченное и незнакомое отбрасывается', () => {
   const ST = loadApp().storage, LANGS = ['ru', 'kk', 'en'];
   const read1 = v => local(ST.read(typeof v === 'string' ? v : JSON.stringify(v), LANGS));
-  const empty = { schema: ST.SCHEMA, lang: 'ru', theme: 'auto', group: false, progress: {}, quiz: {}, collection: { cards: [], badges: [] } };
-  for (const junk of [null, '', 'не JSON', '[]', '42', '"строка"', '{"lang":"de","theme":"розовая","group":"да","progress":7,"quiz":[1],"collection":"x"}']) {
+  const empty = { schema: ST.SCHEMA, lang: 'ru', theme: 'auto', group: false, size: 'm', progress: {}, quiz: {}, collection: { cards: [], badges: [] } };
+  for (const junk of [null, '', 'не JSON', '[]', '42', '"строка"', '{"lang":"de","theme":"розовая","group":"да","size":"xxl","progress":7,"quiz":[1],"collection":"x"}']) {
     assert.deepEqual(read1(junk), { newer: false, state: empty }, String(junk));
   }
   // Вложенный мусор не роняет страницу: остаются только коды и допустимые значения.
-  const dirty = read1({ lang: 'kk', theme: 'dark', group: true,
+  const dirty = read1({ lang: 'kk', theme: 'dark', group: true, size: 7,
     progress: { r11: 1, r13: { prosto: true, proverka: 'да', 'Плохой ключ': true }, '__proto__': { x: true } },
     quiz: { r11: 'x', r13: { 'r13-01': 'right', 'r13-02': 'выдумка', 'r13-03': { a: 1 } } },
     collection: { cards: ['r11-m01:nonce', 'r11-m01:nonce', 7, 'Гамма', '<b>'], badges: 'нет' } });
-  assert.deepEqual(dirty.state, { schema: ST.SCHEMA, lang: 'kk', theme: 'dark', group: true,
+  assert.deepEqual(dirty.state, { schema: ST.SCHEMA, lang: 'kk', theme: 'dark', group: true, size: 'm',
     progress: { r11: {}, r13: { prosto: true } }, quiz: { r11: {}, r13: { 'r13-01': 'right' } },
     collection: { cards: ['r11-m01:nonce'], badges: [] } });
   // То, что страница записала, читается обратно без потерь.
-  const saved = { schema: ST.SCHEMA, lang: 'en', theme: 'light', group: false,
+  const saved = { schema: ST.SCHEMA, lang: 'en', theme: 'light', group: false, size: 'xl',
     progress: { r11: { prosto: true, proverka: true, 'missiya-r11-m01': true } }, quiz: { r11: { 'r11-01': 'hint' } },
     collection: { cards: ['r11-m01:gamma'], badges: ['r11-m01:world:byuro', 'r11-m01:clean'] } };
   assert.deepEqual(read1(saved), { newer: false, state: saved });
@@ -347,7 +347,9 @@ test('ссылки на файлы учебника: только из папк�
 test('список источников пишет «сверено» только у сверенного источника', () => {
   const line = read('js/ui.js').split('\n').find(l => l.includes("t('ист.сверено'"));
   assert.ok(line, 'в js/ui.js нет строки со словом «сверено»');
-  assert.match(line, /s\.checked && s\.verified \?/, 'у источника с verified: false не должно быть «сверено <дата>»');
+  // С 17.11.2026 сверенный источник без даты (лекции) тоже получает «сверено» — без даты; условие то же: verified.
+  assert.match(line, /^\s*s\.verified \?/, 'у источника с verified: false не должно быть «сверено»');
+  assert.ok(line.includes("t('ист.сверено-без-даты')"), '«сверено» без даты — в той же строке, под тем же условием');
 });
 
 test('«Проверь себя» Р11: 8 вопросов, верный ответ — на разных местах, не самый длинный и одной длины с другими', () => {
@@ -385,6 +387,9 @@ test('боковая заметка ^[…]: внутри работает стр
   const problems = raw => { const out = []; MK.checkText(raw, (lvl, where, text) => out.push(where + ': ' + text), {}); return out; };
   assert.deepEqual(problems('Текст^[заметка] и ещё^[вторая].'), []);
   assert.match(problems('Текст^[без конца').join(), /не закрыта/);
+  // Пара скобок — в одном абзаце: страница разбирает текст по абзацам (ревью шага 2, 17.11.2026).
+  assert.match(problems('Текст^[начало в одном абзаце\n\nа конец] в другом').join(), /не закрыта/);
+  assert.deepEqual(problems('Текст^[заметка]\n\nВторой абзац^[вторая].'), []);
   assert.match(problems('Текст^[ ] дальше').join(), /пустая заметка/);
   assert.match(problems('Текст^[внешняя ^[внутренняя]] дальше').join(), /внутри заметки/);
   assert.match(problems('Текст^[источник [[ист: no_such_source]]]').join(), /нет источника/);

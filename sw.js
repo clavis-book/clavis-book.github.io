@@ -14,7 +14,7 @@
 'use strict';
 
 // ---- список файлов (пишет tools/offline.js; руками не править) ----
-const VERSION = '9478d7d8d4f1433c';
+const VERSION = '4deacd0f612850b7';
 const FILES = {
   'content/ekzamen.js': 'uaClcJayDjd/8MEwJl2ePwZSaekqiKz/nvkrMgEIVOY=',
   'content/kk/r11-prosto.js': 'Csm8iakbRK0mc0Z3wCtuOuRFnKY6a8va20tg2x0iSPQ=',
@@ -29,10 +29,10 @@ const FILES = {
   'content/ru/r13-prosto.js': 'h+3HWLjyuULddfadUrzH50jEcrbxFs0Fc44zp9RamfQ=',
   'content/ru/r13-proverka.js': 'FhGFtyraIzYBLW1njyU1inMmc2JvZc965VZj87sgXBA=',
   'content/sections.js': '4vbYtTWrpcbk9P8uJnmeuF5W1+empCr7iiSuLhLcdh8=',
-  'content/ui/en.js': 'YYz89rTIb+iHBNkVct3hG5lge7AkX9S6w8Oal0LYrvQ=',
-  'content/ui/kk.js': 'fDipVBEyYnuaDf5lgb06XnHNvVhBjEn4xptnzjEa7lM=',
-  'content/ui/ru.js': 'OPuJkgREbb6jITS7JVBjGurSYVnLwpgPe7SUyVSEAyA=',
-  'css/base.css': 'BXqUHt9Rofq3eWW3UlLM1v1G/ucGeqJlpiS/0Ztu4fo=',
+  'content/ui/en.js': 'dV2bOD3gshiBCxJk1VIPEyqFA8gqzhbOaxxjwBQhqDM=',
+  'content/ui/kk.js': 'RjV9/vgONUkRmQmq83UamR4nsigasJsfQCDkVIeMrKQ=',
+  'content/ui/ru.js': 'WKkGp7UHA81V09869d+pKxmGLbdhapiN8Xu+QbUIlgc=',
+  'css/base.css': 'sKtKyxoZ+y+XKDNTxdt4W4YmsgFJLve9SE6+BLemBzs=',
   'css/mission.css': '6+g8Y53rkSeXtxc2CD8n+5uYHTx7+Rb2205aqfLL7jg=',
   'data/sources.js': 'W0e+1pZ0wK3Ds7Kx1SqecTmG3KnbbrSPvVXpL0f107Q=',
   'docs/lab/Лабораторная_WiFi.docx': '0T7BbzogByKhU5B/NbrcMUxA0O73DZJ/6T2hiFyRgj4=',
@@ -49,17 +49,17 @@ const FILES = {
   'icons/icon.svg': 'ODfbHMHf/K7hOxjSQHqLwo0nlZ/yEsmvscYwb50MAdY=',
   'icons/maskable-512.png': '1Kl5epjrMcWpPS/w5aVS6g5AiV4kBglWNDrUuvL7wzg=',
   'index.html': 'UvguWR/u514VV1WKImerToQRgatY31gi0Dth9Bq5RTc=',
-  'js/app.js': '7pgDuHxi5NgXQFkWCV8OM7cNb3j33DFgclObfv/71Yc=',
+  'js/app.js': 'KoSAcyUvW8UdlOCEi/W1RqBh1qwyyCHvrRi3+i/h6mc=',
   'js/content-model.js': 'ATZ6XVd3Oh9Ot8qBiSfFqz5oQqXcUd1/bMF8NXvTLGk=',
   'js/interactives.js': 'kK2Jymga87x20t5+qFNWottk/iVLyp7Vn/eJ34/O3Ss=',
-  'js/markup.js': 'LgMjP9vLD6D63pMxoBkNmgVyIVA1Kwe4fkPMEGMMz4M=',
+  'js/markup.js': 'JqwkbtpW3i6D6Lw0gpbJw5hrH/3bouH263pkZN8/R8w=',
   'js/mission-text.js': 'zk/LyGdDDs5QWiKL2vQl5BUSXKZh1u/ZVT1vG7PQzh0=',
   'js/mission.js': 'EGTGU3OGhiqpyftanvz3Amoo3H2LcMP+a/kvNgy22yU=',
   'js/offline.js': 'GoXw4PrxMy9TyGp/53rcKo0+DKywmWLNnbFpLwBziY0=',
   'js/qr.js': 'hXEBpldJg4ptFrImc/NV5JvpUcoZ/+I5Yo+0wEhcVrA=',
-  'js/settings.js': '6P6pwC8MRT+LHamLYF0shHYTVMkxW0IVOSDZ8FovBhw=',
-  'js/store.js': 'NJ7K8B0/booZtQ1xCZsFxZZik8v1mePjfptjgorTfPM=',
-  'js/ui.js': 'FPaxFD1q277gYFO4W0JeXLGpaWX2vAQ96CGhZ6JeVI8=',
+  'js/settings.js': 'tRLDBGZGMt1awah1rK/rTafaCo+4qAMGK7PpJDcN7+I=',
+  'js/store.js': 'crwyqNFNqLOZX5oZsw6PZtU4fDPAbtE8/byFX5dWGsw=',
+  'js/ui.js': 'AkwZjmmKx4QSE4UXM0z3QtEqCFVOv+GyP06veZZGdeE=',
   'manifest.webmanifest': 'IvoyqleuanSnoQiZceQh8M2jtyJRlWaFvMzqCgLW5ns=',
   'models/nonce-reuse.js': '+r6p61y24VlFpjRoC86m3yde1yvlNwfvett6xDGqMZw='
 };
