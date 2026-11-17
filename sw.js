@@ -14,20 +14,20 @@
 'use strict';
 
 // ---- список файлов (пишет tools/offline.js; руками не править) ----
-const VERSION = '257f2a6f03ff6253';
+const VERSION = '63807306faf812c4';
 const FILES = {
   'content/ekzamen.js': 'uaClcJayDjd/8MEwJl2ePwZSaekqiKz/nvkrMgEIVOY=',
   'content/kk/r11-prosto.js': 'qWo4kHlty/pN7I/FmY2xAJjd7NzuiXYUF92l93j0TD0=',
   'content/missions/r11-m01/byuro.js': 'YZUGzdHNSUtfcfo8g6FGH7rddLBs2MDM/sNYeQ67giI=',
   'content/missions/r11-m01/common.js': 'c1aiTzJs6je/t5VDjAM3iEQDtjvoDkN5c6/+sL1cV+0=',
-  'content/ru/r11-doma.js': 'IymVihO84U9hFRgqs8BZdhO1C4ZOZ/+2AJelT+rEIhA=',
+  'content/ru/r11-doma.js': 'mhb3e5vuKRb1z8EJWFcFbvwSL1XCZJA/135Kl5mPHLQ=',
   'content/ru/r11-poprobuy.js': 'FKD7/RSAXymcASori0xfULuYJ306ARr7zsasFh7DZ0k=',
-  'content/ru/r11-prepod.js': 'CyfGRB9pu8Zo8JDhgonxr2iXyFO/l4nI1d6RXEbmavE=',
+  'content/ru/r11-prepod.js': 'oT3idH34mAlZmGEcRfmAn5j5PU4dqsxF0Xe66qNofxc=',
   'content/ru/r11-prosto.js': 'f2nDDEL2PlZ2WJx9pFhpHUUARBXKRo/u4SMmtipltbk=',
-  'content/ru/r11-proverka.js': 'yfRA/rcx2LTr31d2a3S1CtVojggHXI6QDm7sH2u8yZo=',
-  'content/ru/r13-poprobuy.js': 'QKK6cNIAbGjAva0c9xMdDVtuATaZZIpWbTSctO6sK/0=',
-  'content/ru/r13-prosto.js': 'cnO0sig1miHWTXN19wxYG0U+kicuksJG7oTFMoiiIJo=',
-  'content/ru/r13-proverka.js': '34hF/Fvh9wiKP0TD71JfXAoI6wqopaJSSkuxiZ/DpuQ=',
+  'content/ru/r11-proverka.js': 'GzlcE5yly5vV6UG78bYYGq92eNCKZ8kqZ0siheeiGow=',
+  'content/ru/r13-poprobuy.js': 'UgboHgpz6QdcXmC11M3sHOiuCfAlb0gHxLJDevfYviw=',
+  'content/ru/r13-prosto.js': 'HTOQZCXoYNW379lgC0+dSkmIOrJMVR3qp7QzRpjSCR8=',
+  'content/ru/r13-proverka.js': 'hu4nCLpmZwpsG3X+Apf3jyotCuRurJr9f1fmnFyUemk=',
   'content/sections.js': 'm87psLJB/dMAjK+NffHEzF8qBNJuPS/6wM3w9fupL0U=',
   'content/ui/en.js': 'Fy1cvaQR3mWoEUTEcHqSe7B+RxioqIbM9yGyGVmdi24=',
   'content/ui/kk.js': 'lv4JW7AtZnmltNgjTeVM1j+2Es9pscDa6rNrJ4dH8z4=',
