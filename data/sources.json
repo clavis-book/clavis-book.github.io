@@ -505,20 +505,37 @@
     "label": "Reeds 1998",
     "title": "Reeds J. Solved: The Ciphers in Book III of Trithemius's Steganographia // Cryptologia. 1998. Vol. 22, no. 4. P. 291–317",
     "url": "https://www.tandfonline.com/toc/ucry20/22/4",
-    "section": "История «Стеганографии» Иоганна Тритемия: издание 1606 года с «Clavis» — ключом к шифрам первых двух книг; разгадка шифров третьей книги",
+    "section": "Разгадка шифров третьей книги «Стеганографии» Иоганна Тритемия; история её издания 1606 года с ключами",
     "primary": false,
     "verified": false,
     "checked": "17.11.2026",
-    "note": "[проверить]: выходные данные сверены 17.11.2026 по Crossref (том 22, № 4, с. 291–317); ссылка — на оглавление выпуска, а не на DOI: 12 цифр подряд в DOI тест рамок принимает за MAC-адрес; текст статьи у издателя закрыт (ответ 403), поэтому место про «Clavis» 1606 года не прочитано. Та же история — в англоязычной Википедии, статья «Steganographia» (издание: Франкфурт, 1606; ключ к первым двум книгам опубликован в 1606 году), со ссылкой на эту статью. Само франкфуртское издание 1606 года подтверждают книжные каталоги XVII века — «Catalogus librorum venalium» (Эдинбург, 1687) и опись библиотеки У. Брертона (1697), сканы в Wikimedia Commons: «Steganographia… Francof. 1606». Не сверено по первоисточнику только то, что ключ к книгам I и II назывался «Clavis»: сверить по тексту статьи или по каталожной записи издания 1606 года"
+    "note": "[проверить]: выходные данные сверены 17.11.2026 по Crossref (том 22, № 4, с. 291–317); ссылка — на оглавление выпуска, а не на DOI: 12 цифр подряд в DOI тест рамок принимает за MAC-адрес; текст статьи платный и не прочитан. На неё ссылается обзор Википедии (wiki_steganographia); издание 1606 года с ключами подтверждает каталог Библиотеки Конгресса (loc_clavis_1606)"
   },
   "loc_polygraphia": {
     "label": "Библиотека Конгресса, «Полиграфия» Тритемия",
-    "title": "Запись каталога Библиотеки Конгресса США об издании «Полиграфии» Иоганна Тритемия (1518) с «Clavis Polygraphiae»",
-    "url": "https://www.loc.gov/item/32017914/",
-    "section": "«Полиграфия» (1518) завершается ключом — «Clavis Polygraphiae»",
+    "title": "Каталог Библиотеки Конгресса США: Trithemius J. Polygraphiae libri sex. [Базель]: J. Haselberg, 1518 (LCCN 32017914)",
+    "url": "https://lccn.loc.gov/32017914",
+    "section": "«Полиграфия» издана в июле 1518 года; примечание каталога: «Includes the author's Clavis polygraphiae at end» — в конце книги ключ автора",
     "primary": true,
-    "verified": false,
-    "checked": "17.11.2026",
-    "note": "[проверить]: запись каталога ещё не сверена; название, год и «Clavis Polygraphiae» взяты из README проекта"
+    "verified": true,
+    "checked": "17.11.2026"
+  },
+  "loc_clavis_1606": {
+    "label": "Библиотека Конгресса, «Clavis Steganographiae» (1606)",
+    "title": "Каталог Библиотеки Конгресса США: Trithemius J. Clauis Steganographiae Ioannis Trithemij, abbatis Spanheimensis, ad Serenissimum Principem Dn. Philippum. [Франкфурт]: J. Berner, 1606 (LCCN 96155195)",
+    "url": "https://lccn.loc.gov/96155195",
+    "section": "Книжка «Clavis Steganographiae» (70 с.) издана в 1606 году и, по примечанию каталога, вероятно, выпущена вместе со «Steganographia» того же года (LCCN 96154809): на титуле «Стеганографии» сказано, что к ней приложен её ключ — «sua clauis, seu vera introductio»",
+    "primary": true,
+    "verified": true,
+    "checked": "17.11.2026"
+  },
+  "wiki_steganographia": {
+    "label": "Wikipedia: Steganographia",
+    "title": "Wikipedia. Steganographia (обзор)",
+    "url": "https://en.wikipedia.org/wiki/Steganographia",
+    "section": "Написана около 1499 года, издана во Франкфурте в 1606-м; после публикации в 1606 году ключа к первым двум книгам стало ясно, что они о криптографии и стеганографии; шифры третьей книги разгаданы в 1996–1998 годах",
+    "primary": false,
+    "verified": true,
+    "checked": "17.11.2026"
   }
 }

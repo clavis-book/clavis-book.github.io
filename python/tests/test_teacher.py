@@ -45,7 +45,9 @@ class TeacherCommandsTests(unittest.TestCase):
         return run("generate", *self.key_dir(), "--students", str(self.students), "--out", str(self.variants))
 
     def check(self):
-        return run("check", *self.key_dir(), "--answers", str(self.answers), "--out", str(self.results))
+        # Список группы — свой, временный: настоящий students.csv в папке программы тест не должен трогать.
+        return run("check", *self.key_dir(), "--students", str(self.students), "--answers", str(self.answers),
+                   "--out", str(self.results))
 
     def test_full_cycle(self):
         code, out = run("init-secret", *self.key_dir())

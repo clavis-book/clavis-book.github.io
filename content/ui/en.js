@@ -29,7 +29,7 @@ App.ui(String.raw`
 
 вход.заголовок: Clavis
 вход.текст: A textbook and practicum on information security: the course “Cryptographic Methods of Information Protection” and topics beyond it. Each section goes in steps — from “Simply” with everyday examples to “Deeper” at university level, with models, questions and game missions.
-вход.имя: Clavis is Latin for “key”. In 1606 that was the title of a booklet printed together with Johannes Trithemius’s “Steganographia”: it explained how the ciphers in its first two books worked. And in 1883 Auguste Kerckhoffs wrote down the rule modern cryptography rests on: everyone may know how the lock is built — only the key must be kept safe.
+вход.имя: Clavis is Latin for “key”. In 1606 Johannes Trithemius’s “Steganographia” came out together with a booklet called “Clavis Steganographiae” — the key to its ciphers. And in 1883 Auguste Kerckhoffs wrote down the rule modern cryptography rests on: everyone may know how the lock is built — only the key must be kept safe.
 вход.студенту: Students
 вход.студенту-текст: Section map, steps, questions with explanations and the “Kilt Bureau” mission in section 11
 вход.преподавателю: Teachers
@@ -190,5 +190,5 @@ qr.длинный: The textbook address is too long for a QR code. Shorten the f
 офлайн.android: Android, Chrome: menu ⋮ → “Install app” or “Add to Home screen” (the name depends on the version).
 офлайн.iphone: iPhone and iPad, Safari: the Share button → “Add to Home Screen”.
 офлайн.компьютер: Computer, Chrome or Edge: the install icon in the address bar, or the browser menu → “Install…”.
-офлайн.зачем: The installed textbook opens from an icon on your screen, in its own window, and works without the internet. Your progress stays on the device. On an iPhone, installing also protects your progress: Safari may erase the data of a site you have not opened for a week, but not of an installed one.
+офлайн.зачем: The installed textbook opens from an icon on your screen, in its own window, and works without the internet. Your progress stays on the device. On an iPhone, installing also protects your progress: if you don’t open a site during seven days of using Safari, the browser may erase its data, but not an installed textbook’s.
 `);

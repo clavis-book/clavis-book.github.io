@@ -14,7 +14,7 @@
 'use strict';
 
 // ---- список файлов (пишет tools/offline.js; руками не править) ----
-const VERSION = 'aa77f0d0c5fc63d4';
+const VERSION = '8161f2571696b58e';
 const FILES = {
   'content/ekzamen.js': 'uaClcJayDjd/8MEwJl2ePwZSaekqiKz/nvkrMgEIVOY=',
   'content/kk/r11-prosto.js': 'Csm8iakbRK0mc0Z3wCtuOuRFnKY6a8va20tg2x0iSPQ=',
@@ -29,12 +29,12 @@ const FILES = {
   'content/ru/r13-prosto.js': 'h+3HWLjyuULddfadUrzH50jEcrbxFs0Fc44zp9RamfQ=',
   'content/ru/r13-proverka.js': 'FhGFtyraIzYBLW1njyU1inMmc2JvZc965VZj87sgXBA=',
   'content/sections.js': '4vbYtTWrpcbk9P8uJnmeuF5W1+empCr7iiSuLhLcdh8=',
-  'content/ui/en.js': '9eQ3smqCSifYUz1Q25Zr9vWAc60gscpzoF1L5pJLxRE=',
-  'content/ui/kk.js': 'yuwipj2anCTNMz0IE/3KSlVA5aF2u26BOIBqfh9qd4Q=',
-  'content/ui/ru.js': 'fhnH+Skm7f1dbOEdMLPEiZ36tYwb4sqWHSRiAMMIZHU=',
+  'content/ui/en.js': 'Lxoip0fmGoA1rExt63VxPa2XgP/fwUxP3SbpkbT9T0g=',
+  'content/ui/kk.js': 'mUNRvnAPv8o+ILePAbJFBvjG3sle70/RFGSKASy8fXk=',
+  'content/ui/ru.js': 'tqCWKXMrsT57CAYRyIxAogcNCtYq8yum3P9zAhAV0xE=',
   'css/base.css': 'JmfcYF4gw+4Lu5jCq9lgwCIQ/vrKQcCDiV8H8m0ihJo=',
   'css/mission.css': '6+g8Y53rkSeXtxc2CD8n+5uYHTx7+Rb2205aqfLL7jg=',
-  'data/sources.js': 'ZnnNEE3gC0gOJqxDEzf9MgedBbM6wNlQO+U/puQWrDA=',
+  'data/sources.js': 'GhR1RbXG4SSTyQD/6yzPicqH3dOibgOHikLFzQHFiHY=',
   'docs/lab/Лабораторная_WiFi.docx': '0T7BbzogByKhU5B/NbrcMUxA0O73DZJ/6T2hiFyRgj4=',
   'docs/lab/Лабораторная_WiFi.md': 'HHHBMulzCHbJcK78ecFBJsWUH1382jHc8NjY1YfSR6Q=',
   'fonts/Lora-Italic.ttf': 'ItjYhUtTgHqmZMo08gMantV6HQ3qKWuLls3Tqtk3orM=',
