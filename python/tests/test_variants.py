@@ -885,7 +885,7 @@ class QuestionBankTests(unittest.TestCase):
         questions = DATA["questions"]["questions"]
         ids = [q["id"] for q in questions]
         self.assertEqual(len(ids), len(set(ids)))
-        # Демо-банк: 8 вопросов. В закрытом банке преподавателя — 15–20 (план версии 1, раздел 2.4).
+        # Демо-банк: 8 вопросов. В закрытом банке преподавателя — 15–20.
         self.assertGreaterEqual(len(questions), 8)
         for q in questions:
             with self.subTest(question=q["id"]):

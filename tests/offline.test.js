@@ -302,6 +302,35 @@ test('запись с верным именем и чужим содержимы
   assert.equal((await w4.ask(SITE + 'js/app.js')).ok, false);
 });
 
+// Аварийный выключатель из README: в аварию его копируют в sw.js как есть, поэтому проверяется заранее — тот же
+// формат имён хранилищ, что у sw.js; удаляет только копии своей папки; снимает воркер; в сеть не ходит.
+test('аварийный выключатель из README: удаляет только свои копии и снимает воркер', async () => {
+  const readme = read('README.md');
+  const code = (readme.slice(readme.indexOf('аварийный выключатель')).match(/```js\n([\s\S]*?)```/) || [])[1];
+  assert.ok(code, 'в README нет блока ```js с выключателем после слов «аварийный выключатель»');
+  const prefixLine = /^const PREFIX = .*$/m;
+  assert.equal(code.match(prefixLine)[0], SW.match(prefixLine)[0], 'имена хранилищ в выключателе и в sw.js должны строиться одинаково');
+  const flat = code.replace(/\s+/g, '');
+  for (const w of ['fetch(', 'importScripts', 'eval(', 'newFunction', 'XMLHttpRequest', 'http:', 'https:', 'clients.']) assert.ok(!flat.includes(w), 'лишнее в выключателе: ' + w);
+  const neighbour = 'clavis:https://uchebnik.example/kl-chernovik/:1';
+  const store = new Set([cacheName, oldName, neighbour, 'drugoy-proekt:1']);
+  const log = { handlers: {}, skipped: false, unregistered: false };
+  const self = {
+    location: { href: SITE + 'sw.js' },
+    addEventListener: (type, fn) => { log.handlers[type] = fn; },
+    skipWaiting: async () => { log.skipped = true; },
+    registration: { unregister: async () => { log.unregistered = true; return true; } }
+  };
+  const caches = { keys: async () => [...store], delete: async name => store.delete(name) };
+  vm.runInNewContext(code, { self, caches, URL }, { filename: 'README.md (выключатель)' });
+  assert.deepEqual(Object.keys(log.handlers).sort(), ['activate', 'install'], 'выключатель не отвечает на запросы страниц');
+  log.handlers.install({});
+  assert.ok(log.skipped, 'выключатель должен включаться сразу, не дожидаясь закрытия вкладок');
+  let job; log.handlers.activate({ waitUntil: p => { job = p; } }); await job;
+  assert.deepEqual([...store].sort(), [neighbour, 'drugoy-proekt:1'].sort(), 'удалены только копии этой папки');
+  assert.ok(log.unregistered, 'воркер снят');
+});
+
 // ---------- 3. Запуск со страницы (js/offline.js) ----------
 // Страница-подделка: адрес, навигатор и окно — ровно то, что читает js/offline.js.
 function pageWorld({ href, sw = true, tt = true, active = false, controlled = false }) {
@@ -391,6 +420,9 @@ test('манифест: название, запуск в своём окне и
   assert.equal(m.name, 'Clavis');
   assert.ok(m.short_name.length <= 12, 'короткое название — до 12 знаков, иначе под значком оно обрежется');
   assert.equal(m.display, 'standalone');
+  // id — имя приложения для браузера: без него им становится адрес start_url, и смена start_url превратила бы уже
+  // установленный учебник в «другое приложение». Браузер дописывает id к началу сайта: …github.io/clavis. Не менять.
+  assert.equal(m.id, '/clavis');
   assert.equal(m.start_url, 'index.html');
   assert.equal(m.scope, './');
   assert.equal(m.lang, 'ru');

@@ -33,7 +33,7 @@ class ReferenceDataTest(unittest.TestCase):
         self.assertEqual(validate_protocols(self.protocols, self.sources), [])
 
     def test_control_values(self):
-        # Контрольные факты из плана (раздел 2.1): если их случайно сотрут, тест упадёт.
+        # Контрольные факты справочника: если их случайно сотрут, тест упадёт.
         self.assertIn("CRC-32", get_protocol(self.protocols, "wep")["integrity"])
         self.assertIn("CCMP", get_protocol(self.protocols, "wpa2")["encryption"])
         self.assertIn("SAE", get_protocol(self.protocols, "wpa3")["authentication"])
