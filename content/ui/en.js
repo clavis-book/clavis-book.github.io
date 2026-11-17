@@ -51,7 +51,7 @@ App.ui(String.raw`
 страница.статус.checked: translation checked by a native speaker
 
 вход.заголовок: Clavis
-вход.текст: A textbook and practicum on information security: the course “Cryptographic Methods of Information Protection” and topics beyond it. Each section goes in steps — from the “Introduction” with everyday examples to the “In depth” step at university level, with models, questions and game missions.
+вход.текст: A textbook and practicum on information security: the course “Cryptographic Methods of Information Protection” and topics beyond it. Each section goes in steps — from the “Introduction” with everyday examples to “Theory” at university level, with models, questions and game missions.
 вход.имя: Clavis is Latin for “key”. In 1606 Johannes Trithemius’s “Steganographia” came out together with a booklet called “Clavis Steganographiae” — the key to its ciphers. And in 1883 Auguste Kerckhoffs wrote down the rule modern cryptography rests on: everyone may know how the lock is built — only the key must be kept safe.
 вход.студенту: Students
 вход.студенту-текст: Section map, steps, questions with explanations and the Tumar Bureau mission in section 11
@@ -69,7 +69,7 @@ App.ui(String.raw`
 карта.текст: Sections open in any order; the path “from scratch” follows the numbers. Section 11 is ready first — a good place to start.
 карта.пройдено: done
 карта.впереди: ahead
-карта.отметки: marks — Introduction, Practice, In depth, Self-check
+карта.отметки: marks — Introduction, Practice, Theory, Self-check
 карта.плитка: Section {n}: {название}. Steps marked: {отмечено} of 4
 карта.флагман: ready first
 карта.коллекция: Collection on this device
@@ -84,9 +84,9 @@ App.ui(String.raw`
 ступени.меню: Section steps
 ступень.prosto: Introduction
 ступень.poprobuy: Practice
-ступень.glubzhe: In depth
+ступень.glubzhe: Theory
 ступень.proverka: Self-check
-ступень.doma: Application
+ступень.doma: Checklist
 ступень.prepod: For teachers
 ступень.нет-плана: This step will appear later.
 ступень.перевод-устарел: translation out of date
