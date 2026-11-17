@@ -4,10 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="text-scale" content="scale">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; require-trusted-types-for 'script'; trusted-types 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; manifest-src 'self'; worker-src 'self'; require-trusted-types-for 'script'; trusted-types clavis-offline">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
-<title>Ключ и замок</title>
+<meta name="theme-color" content="#F8F9F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1C211E" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Интерактивный учебник-практикум по защите информации и криптографии: от простого к сложному, с моделями, вопросами и игровыми миссиями. Работает без интернета.">
+<title>Clavis</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-dark.svg" type="image/svg+xml" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/mission.css">
 </head>
@@ -45,6 +53,8 @@
 <script src="js/ui.js"></script>
 <script src="js/interactives.js"></script>
 <script src="js/mission.js"></script>
+<!-- Учебник на устройстве: работа без интернета и установка (только на сайте) -->
+<script src="js/offline.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

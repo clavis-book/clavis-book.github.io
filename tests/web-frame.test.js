@@ -1,4 +1,5 @@
-// Рамки веб-версии для всего кода страницы (рамки 1 и 2 проекта): ни одного обращения в сеть, никакой
+// Рамки веб-версии для всего кода страницы (рамки 1 и 2 проекта): ни одного обращения в сеть (копию учебника
+// для работы без интернета скачивает с того же сайта сервис-воркер sw.js — его рамки в tests/offline.test.js), никакой
 // вставки HTML-строк и выполнения строк как кода, данные — только на устройстве и только через js/ui.js,
 // строгая политика безопасности (CSP) в каждой странице, шрифты свои и с лицензиями.
 // Запуск из корня репозитория: node --test tests/web-frame.test.js
@@ -32,7 +33,8 @@ const htmlPages = () => fs.readdirSync(ROOT).filter(f => f.endsWith('.html'));
 const FORBIDDEN = [
   ['fetch(', 'сеть'], ['XMLHttpRequest', 'сеть'], ['WebSocket', 'сеть'], ['EventSource', 'сеть'], ['sendBeacon', 'сеть'],
   ['RTCPeerConnection', 'сеть'], ['import(', 'загрузка кода'], ['importScripts', 'загрузка кода'], ['Worker(', 'загрузка кода'],
-  ['serviceWorker', 'загрузка кода (сервис-воркер — только с отдельной проверкой)'], ['eval(', 'строка как код'],
+  ['serviceWorker', 'сервис-воркер — только в функции startOfflineCopy'], ['createPolicy', 'политика Trusted Types — только в функции startOfflineCopy'],
+  ['trustedTypes', 'политика Trusted Types — только в функции startOfflineCopy'], ['eval(', 'строка как код'],
   ['new Function', 'строка как код'], ['innerHTML', 'вставка HTML'], ['outerHTML', 'вставка HTML'],
   ['insertAdjacentHTML', 'вставка HTML'], ['document.write', 'вставка HTML'], ['srcdoc', 'вставка HTML'],
   ['createContextualFragment', 'вставка HTML'], ['DOMParser', 'вставка HTML'], ['javascript:', 'код в адресе'],
@@ -53,8 +55,31 @@ const LOADING_TAGS = 'img|iframe|script|link|object|embed|audio|video|source|tra
 // Единственная строка кода, которой разрешено читать адрес страницы (js/interactives.js, функция pageBase).
 const QR_PAGE_BASE = String.raw`function pageBase() { return location.protocol === 'file:' ? null : { url: location.origin + location.pathname, local: /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) }; }`;
 
-function problems(rel, text) {
+// Единственное место, где страница запускает сервис-воркер, создаёт политику Trusted Types и ещё раз читает адрес
+// страницы (js/offline.js, функция startOfflineCopy; 15.11.2026). Сам сервис-воркер — sw.js в корне —
+// проверяется отдельно, в tests/offline.test.js: что он скачивает, что хранит и чем отвечает.
+const OFFLINE_START = String.raw`  function startOfflineCopy(report) {
+    const sw = navigator.serviceWorker, tt = window.trustedTypes;
+    if (!sw || location.protocol === 'file:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) return;
+    const url = tt ? tt.createPolicy('clavis-offline', { createScriptURL: () => 'sw.js' }).createScriptURL('') : 'sw.js';
+    const controlled = !!sw.controller;
+    sw.register(url).then(reg => {
+      const worker = reg.installing || reg.waiting;
+      if (reg.active) report('ready');
+      else if (worker) {
+        report('saving');
+        worker.addEventListener('statechange', () => { if (worker.state === 'activated') report('ready'); else if (worker.state === 'redundant') report('none'); });
+      }
+    }, () => {});
+    sw.addEventListener('controllerchange', () => { if (controlled) report('updated'); });
+  }`;
+
+function problems(rel, source) {
   const found = [];
+  // Исключение для работы без интернета — только функция startOfflineCopy слово в слово и только в js/offline.js:
+  // она вырезается целиком, всё остальное в файле проверяется как обычно. Изменили в ней хоть знак — она
+  // перестаёт совпадать, и тест остановит: правку функции нужно внести и сюда, то есть показать проверяющему.
+  const text = rel === 'js/offline.js' ? source.split(OFFLINE_START).join('') : source;
   // Запрещённое ищем и в «сплющенном» тексте: без пробелов, без «?.» и с одинаковыми кавычками, —
   // чтобы пробел перед скобкой или двойные кавычки ничего не прятали.
   const flat = text.replace(/\s+/g, '').replace(/\?\./g, '.').replace(/["`]/g, "'");
@@ -106,6 +131,7 @@ test('проверка проверяющего: на плохом коде ср
     "new Function('return 1')", "a.href = 'javascript:alert(1)'", "setTimeout('alert(1)', 10)", "img.src = u",
     "localStorage.setItem('k', 'v')", "el.setAttribute('onclick', 'x()')", 'new DOMParser()', "window.open('x')",
     'document.cookie', "el.style.cssText = 'color:red'", "new Worker('w.js')", 'navigator.serviceWorker.register(u)',
+    "trustedTypes.createPolicy('x', { createHTML: s => s })", "tt.createPolicy('default', {})",
     'new FileReader()', "h('input', { type: 'file' })", 'ev.dataTransfer.files', "el.addEventListener('paste', f)",
     "ev.clipboardData.getData('text')", "h('div', { ondrop: f })", 'window.showOpenFilePicker()',
     "location.assign('https://example.org')", "location.replace(u)", "location.href = u", "window.location = u",
@@ -131,6 +157,19 @@ test('проверка проверяющего: на плохом коде ср
   for (const line of ['const q = location.search;', 'location.href = u;', "const p = location.pathname;", 'send(location.href);']) {
     assert.ok(problems('js/interactives.js', line).length, 'не поймано в js/interactives.js: ' + line);
   }
+  // Исключение для работы без интернета — только функция startOfflineCopy слово в слово и только в js/offline.js.
+  assert.deepEqual(problems('js/offline.js', '(function () {\n' + OFFLINE_START + '\n  startOfflineCopy(report);\n})();\n'), []);
+  assert.ok(problems('js/proba.js', OFFLINE_START).length, 'запуск сервис-воркера вне js/offline.js');
+  assert.ok(problems('js/app.js', OFFLINE_START).length, 'запуск сервис-воркера вне js/offline.js');
+  for (const [a, b] of [["() => 'sw.js'", 'u => u'], ["'sw.js' }", "'drugoy.js' }"], [": 'sw.js';", ': location.search;'],
+    ["location.protocol === 'file:' || ", ''], ['sw.register(url)', "sw.register(url, { scope: '/' })"]]) {
+    assert.ok(OFFLINE_START.includes(a), 'образец для проверки устарел: ' + a);
+    assert.ok(problems('js/offline.js', OFFLINE_START.replace(a, b)).length, 'изменённая startOfflineCopy: ' + a + ' → ' + b);
+  }
+  for (const line of ['navigator.serviceWorker.register(u)', "window.trustedTypes.createPolicy('x', { createHTML: s => s })",
+    'const where = location.hostname;', "navigator.serviceWorker.getRegistrations()", "tt.createPolicy('default', {})"]) {
+    assert.ok(problems('js/offline.js', OFFLINE_START + '\n' + line).length, 'не поймано в js/offline.js: ' + line);
+  }
 });
 
 test('каждая страница: CSP без unsafe-inline и с Trusted Types, ничего внешнего, без встроенных скриптов и стилей', () => {
@@ -140,9 +179,12 @@ test('каждая страница: CSP без unsafe-inline и с Trusted Type
     const html = read(f);
     const csp = (html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1] || '';
     for (const part of ["default-src 'none'", "script-src 'self'", "style-src 'self'", "font-src 'self'", "connect-src 'none'",
-      "object-src 'none'", "base-uri 'none'", "form-action 'none'", "require-trusted-types-for 'script'", "trusted-types 'none'"]) {
+      "img-src 'self'", "object-src 'none'", "base-uri 'none'", "form-action 'none'", "manifest-src 'self'", "worker-src 'self'",
+      "require-trusted-types-for 'script'"]) {
       assert.ok(csp.includes(part), f + ': в CSP нет ' + part);
     }
+    // Политика Trusted Types одна, с известным именем: её создаёт только startOfflineCopy, и выдаёт она только адрес sw.js.
+    assert.deepEqual(csp.split(';').map(d => d.trim()).filter(d => d.startsWith('trusted-types')), ['trusted-types clavis-offline'], f + ': политика Trusted Types');
     assert.doesNotMatch(csp, /unsafe-inline|unsafe-eval|unsafe-hashes|https?:|data:|blob:|\*/, f + ': CSP слишком широкая');
     const body = html.replace(/<!--[\s\S]*?-->/g, '');
     assert.doesNotMatch(body, /(src|href)="(https?:)?\/\//, f + ': внешняя загрузка');

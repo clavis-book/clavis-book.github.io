@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<!-- Значок учебника Clavis: замок с ключом на дужке, лист в клетку — для светлой темы. © Малика Ерболқызы, 2026. Лицензия CC BY 4.0. -->
+<defs>
+<clipPath id="tile"><rect width="512" height="512" rx="112"/></clipPath>
+<clipPath id="body"><path d="M112 236L350 229L365 244L369 421L354 437L110 443L93 428L98 251Z"/></clipPath>
+<clipPath id="upper"><rect x="250" y="120" width="110" height="64"/></clipPath>
+<pattern id="dots" width="13" height="13" patternUnits="userSpaceOnUse" patternTransform="rotate(31)"><circle cx="4" cy="4" r="2.7" fill="#0A5E36"/></pattern>
+</defs>
+<g clip-path="url(#tile)">
+<rect width="512" height="512" fill="#F6EFDD"/>
+<path transform="rotate(-6 256 256)" d="M-60 24H580M-60 82H580M-60 140H580M-60 198H580M-60 256H580M-60 314H580M-60 372H580M-60 430H580M-60 488H580M24-60V580M82-60V580M140-60V580M198-60V580M256-60V580M314-60V580M372-60V580M430-60V580M488-60V580" stroke="#12A05C" stroke-opacity=".24" stroke-width="2.5" fill="none"/>
+</g>
+<g transform="translate(-30 6) rotate(-6 240 270)">
+<g transform="translate(9 8)">
+<path d="M112 236L350 229L365 244L369 421L354 437L110 443L93 428L98 251Z" fill="#12A05C"/>
+<g clip-path="url(#body)"><path d="M369 250L369 443L150 443Z" fill="url(#dots)"/><path d="M98 251L112 236L196 233.500L116 330Z" fill="#5FD197"/></g>
+</g>
+<path d="M134 252L133 168L150 117L189 82L230 69L273 81L311 118L326 168L327 252L284 252L284 172L271 141L252 121L230 114L207 121L189 140L176 172L177 252Z" fill="#191C1A"/>
+<path d="M148 154L161 123L188 99L185 108L169 126L157 155Z" fill="#F6EFDD"/>
+<path d="M212 85L232 79L243 82L226 87Z" fill="#F6EFDD"/>
+<path d="M112 236L350 229L365 244L369 421L354 437L110 443L93 428L98 251Z" fill="none" stroke="#191C1A" stroke-width="13" stroke-linejoin="miter"/>
+<path d="M220 284L243 283L258 299L257 322L245 334L252 390L210 391L217 335L204 323L205 300Z" fill="#191C1A"/>
+<g transform="translate(305 196) rotate(-24)">
+<g transform="translate(5 11)" fill="#FF5A2B">
+<path fill-rule="evenodd" d="M-22-54L23-55L55-23L56 22L24 55L-21 56L-55 23L-56-22ZM-12-30L13-30L30-12L30 13L13 30L-12 30L-30 13L-30-12Z"/>
+<path d="M-12 50L12 50L11 250L0 268L-11 250Z"/>
+<path d="M11 214L11 190L42 160L60 160L60 178L29 208L60 238L60 256L42 256L11 226Z"/>
+</g>
+<g fill="none" stroke="#191C1A" stroke-width="11" stroke-linejoin="miter">
+<path d="M-22-54L23-55L55-23L56 22L24 55L-21 56L-55 23L-56-22Z"/><path d="M-12-30L13-30L30-12L30 13L13 30L-12 30L-30 13L-30-12Z"/>
+<path d="M-12 56L-11 250L0 268L11 250L11 226L42 256L60 256L60 238L29 208L60 178L60 160L42 160L11 190L12 56"/>
+</g>
+</g>
+<g clip-path="url(#upper)"><path d="M134 252L133 168L150 117L189 82L230 69L273 81L311 118L326 168L327 252L284 252L284 172L271 141L252 121L230 114L207 121L189 140L176 172L177 252Z" fill="#191C1A"/></g>
+</g>
+<path d="M72.0 75.6L80.2 101.8L106.4 110.0L80.2 118.2L72.0 144.4L63.8 118.2L37.6 110.0L63.8 101.8Z" fill="#FF5A2B"/><path d="M66.0 69.6L74.2 95.8L100.4 104.0L74.2 112.2L66.0 138.4L57.8 112.2L31.6 104.0L57.8 95.8Z" fill="none" stroke="#191C1A" stroke-width="7" stroke-linejoin="miter"/>
+<path d="M432 300L454 290M438 330L464 330M430 358L452 370" stroke="#191C1A" stroke-width="7" fill="none"/>
+</svg>

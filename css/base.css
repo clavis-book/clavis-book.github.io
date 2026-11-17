@@ -1,4 +1,4 @@
-/* Учебник-практикум «Ключ и замок»: общее оформление.
+/* Учебник-практикум Clavis: общее оформление.
    Замысел: учебная тетрадь в клетку. Светлый серо-зелёный лист, графитовый текст, один зелёный акцент
    (палитра «графит + зелёный»). Lora — заголовки, PT Sans — текст, PT Mono — шифровки и числа.
    Шрифты лежат в fonts/ (лицензия SIL OFL 1.1 — рядом), страница ничего не загружает из сети.
@@ -58,7 +58,19 @@ h3 { font-size: 1.08rem; }
 }
 .top-in { max-width: 76rem; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding-block: .55rem; }
 .brand { font-family: var(--display); font-weight: 600; font-size: 1.05rem; text-decoration: none; color: var(--ink); display: flex; align-items: baseline; gap: .5rem; }
-.brand small { font-family: var(--body); font-weight: 400; color: var(--ink-2); font-size: .8rem; }
+.brand { white-space: nowrap; }   /* название не рвётся на две строки; на узком экране переносится подзаголовок */
+.brand small { font-family: var(--body); font-weight: 400; color: var(--ink-2); font-size: .8rem; white-space: normal; }
+/* Знак учебника перед названием — замок с ключом на дужке: «бумага» в светлой теме, «изумруд» в тёмной.
+   Меняется вместе с темой, как и цвета: и по настройке системы, и по кнопке «Тема». */
+.brand::before { content: ""; flex: none; align-self: center; width: 2rem; height: 2rem; background: url("../icons/icon.svg") center / contain no-repeat; }
+/* Тот же знак крупно — на входе: наклеен на лист чуть криво, с плотной тенью, как оттиск. */
+.hero { display: grid; grid-template-columns: auto 1fr; gap: 1rem 1.6rem; align-items: center; }
+.mark { width: 8.5rem; aspect-ratio: 1; background: url("../icons/icon.svg") center / contain no-repeat; transform: rotate(-3deg); filter: drop-shadow(4px 5px 0 var(--rule)); }
+@media (max-width: 34rem) { .hero { grid-template-columns: 1fr; } .mark { width: 6rem; } }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .brand::before, :root:not([data-theme="light"]) .mark { background-image: url("../icons/icon-dark.svg"); }
+}
+:root[data-theme="dark"] .brand::before, :root[data-theme="dark"] .mark { background-image: url("../icons/icon-dark.svg"); }
 .nav { display: flex; gap: .25rem; flex-wrap: wrap; margin-left: auto; }
 .nav a, .seg button {
   text-decoration: none; color: var(--ink); padding: .3rem .6rem; border-radius: var(--r); border: 1px solid transparent; font-size: .92rem; background: none; cursor: pointer;
@@ -209,6 +221,7 @@ h1:focus, h2:focus, h3:focus { outline: none; }
 .seg button { min-height: 2.25rem; min-width: 2.75rem; }
 .draft-lang { max-width: 76rem; margin: 0 auto; padding: .3rem 0 .5rem; font-size: .85rem; color: var(--ochre); }
 .mission .draft-lang { padding: 0 0 .8rem; }
+.top-note { max-width: 76rem; margin: 0 auto; padding: .3rem 0 .5rem; font-size: .85rem; color: var(--ink-2); }
 #app { display: block; }
 #app:focus { outline: none; }
 .group #app { zoom: 1.22; }

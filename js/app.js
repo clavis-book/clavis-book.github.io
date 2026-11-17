@@ -13,6 +13,7 @@
   const check = CM.validate({ expected, model: typeof NonceReuse !== 'undefined' ? NonceReuse : null });
   const errors = check.issues.filter(i => i.level === 'ошибка');
 
+  let paintOffline = null;                   // перерисовка блока «Учебник на этом устройстве», если он на экране
   const page = (...kids) => { app.replaceChildren(h('div', { class: 'page' }, kids)); window.scrollTo(0, 0); V.focusTitle(app); };
   const errorBanner = () => errors.length
     ? h('p', { class: 'banner bad', role: 'status' }, t('ошибки.баннер', { n: errors.length }), ' ', h('a', { href: '#model' }, t('ошибки.смотреть')))
@@ -26,18 +27,60 @@
     return l === 'все' ? t('раздел.все-лекции') : l;
   }
 
+  // ---------- Учебник на этом устройстве: работа без интернета и установка (js/offline.js) ----------
+  // Блок есть только на сайте: из папки на диске учебник и так открывается без интернета. Блок строится один
+  // раз; когда состояние меняется («сохраняю» → «сохранён»), меняются только текст и видимость его частей.
+  // Поэтому раскрытая подсказка не захлопывается, а фокус клавиатуры не пропадает.
+  function offlineBlock() {
+    const O = App.offline;
+    if (!O) return null;
+    const TEXT = { saving: 'офлайн.сохраняю', ready: 'офлайн.готово', updated: 'офлайн.обновлён' };
+    const title = h('h2', { id: 'off-h', tabindex: '-1' }, t('офлайн.заголовок'));
+    const status = h('p', {});
+    const open = h('a', { href: 'index.html' }, t('офлайн.открыть'));
+    // После нажатия кнопка исчезает (браузер показывает своё окно установки), поэтому фокус заранее уходит на заголовок.
+    const install = h('div', { class: 'row' },
+      h('button', { type: 'button', class: 'btn', onclick: () => { title.focus(); O.install(); } }, t('офлайн.установить')));
+    const how = h('details', { class: 'src-more' }, h('summary', {}, t('офлайн.как')),
+      h('ul', { class: 'note' }, ['android', 'iphone', 'компьютер'].map(k => h('li', {}, t('офлайн.' + k)))),
+      h('p', { class: 'note' }, t('офлайн.зачем')));
+    const box = h('section', { class: 'reading sheet stack', 'aria-labelledby': 'off-h' }, title, status, install, how);
+    paintOffline = () => {
+      const updated = O.state === 'updated';
+      box.hidden = O.state === 'none' && !O.prompt;
+      status.hidden = !TEXT[O.state];
+      // О новой версии вслух говорит строка в верхней полосе; здесь повтор был бы лишним.
+      if (updated) status.removeAttribute('role'); else status.setAttribute('role', 'status');
+      V.fill(status, TEXT[O.state] ? t(TEXT[O.state]) : null, updated ? [' ', open] : null);
+      install.hidden = !O.prompt || O.installed();
+      how.hidden = O.installed();
+    };
+    paintOffline();
+    return box;
+  }
+  // Верхняя полоса перестраивается один раз — когда пришла новая версия; фокус клавиатуры при этом сохраняется.
+  let toldUpdate = false;
+  if (App.offline) App.offline.onChange = () => {
+    if (App.offline.state === 'updated' && !toldUpdate) { toldUpdate = true; V.renderTop(undefined, true); }
+    if (paintOffline) paintOffline();
+  };
+
   // ---------- Вход ----------
   function entryScreen() {
     const tile = (href, title, text, soon) => h('a', { class: 'tile' + (soon ? ' soon' : ''), href: '#' + href },
       h('span', { class: 't' }, title), h('span', { class: 'a' }, text), soon ? h('span', { class: 'chip' }, t('скоро')) : null);
+    // Знак учебника крупно: сама картинка — в стилях (меняется с темой), программам чтения с экрана она не нужна.
     page(h('div', { class: 'reading stack' },
-      h('h1', {}, t('вход.заголовок')),
-      h('p', { class: 'lead' }, t('вход.текст')),
+      h('div', { class: 'hero' },
+        h('span', { class: 'mark', 'aria-hidden': 'true' }),
+        h('div', { class: 'stack' }, h('h1', {}, t('вход.заголовок')), h('p', { class: 'lead' }, t('вход.текст')))),
+      h('p', { class: 'small muted' }, t('вход.имя')),     // откуда название: слово с настоящей криптографической историей
       errorBanner()),
       h('div', { class: 'map entry' },
         tile('karta', t('вход.студенту'), t('вход.студенту-текст')),
         tile('prepodavatelyu', t('вход.преподавателю'), t('вход.преподавателю-текст')),
         tile('proektor', t('вход.проектор'), t('вход.проектор-текст'), true)),
+      offlineBlock(),
       h('p', { class: 'reading small muted' }, t('вход.устройство'), ' ', h('a', { href: '#model' }, t('вход.модель'))));
   }
 
@@ -68,7 +111,8 @@
       h('section', { class: 'reading sheet stack', 'aria-labelledby': 'coll-h' },
         h('h2', { id: 'coll-h' }, t('карта.коллекция')),
         h('p', {}, t('карта.коллекция-текст', { карточек: V.collection.count('cards'), наград: V.collection.count('badges') })),
-        h('div', { class: 'row' }, wipe)));
+        h('div', { class: 'row' }, wipe)),
+      offlineBlock());
   }
 
   // ---------- Карта к экзамену ----------
@@ -252,6 +296,7 @@
   // ---------- Маршруты ----------
   function route() {
     const r = CM.parseRoute(location.hash);
+    paintOffline = null;
     if (r.page === 'step' && forceRu && forceRu !== r.section + '-' + r.step) forceRu = null;
     // Ступень «Преподавателю» — в разделе преподавателя верхней полосы, остальные ступени — в разделе студента.
     const area = r.page === 'step' && r.step === 'prepod' ? 'prepodavatelyu' : r.page;

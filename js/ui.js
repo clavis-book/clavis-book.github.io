@@ -178,15 +178,20 @@
   }
   const view = { onChange: null };
   // Шапка строится заново, поэтому фокус клавиатуры возвращается на ту же кнопку (data-focus), а не теряется.
-  function setPref(k, v) {
+  function keepTopFocus(rebuild) {
     const was = document.activeElement && document.activeElement.closest('#top') ? document.activeElement.getAttribute('data-focus') : null;
-    S[k] = v; store.save(); applyPrefs(); renderTop(); if (view.onChange) view.onChange(k);
+    rebuild();
     const again = was && [...document.querySelectorAll('#top [data-focus]')].find(el => el.getAttribute('data-focus') === was);
     if (again) again.focus();
   }
+  function setPref(k, v) {
+    keepTopFocus(() => { S[k] = v; store.save(); applyPrefs(); renderTop(); if (view.onChange) view.onChange(k); });
+  }
 
   // Верхняя полоса: название, разделы приложения, язык, тема, «Группой».
-  function renderTop(current) {
+  // keepFocus — шапка меняется сама, не по действию человека (пришла новая версия): фокус остаётся, где был.
+  function renderTop(current, keepFocus) {
+    if (keepFocus) return keepTopFocus(() => renderTop(current));
     if (current !== undefined) view.area = current;
     const area = view.area;
     const link = (href, key) => h('a', { href: '#' + href, 'aria-current': area === href ? 'page' : null }, t(key));
@@ -203,7 +208,9 @@
             h('button', { type: 'button', lang: l, 'data-focus': 'lang-' + l, 'aria-pressed': lang() === l ? 'true' : 'false', 'aria-label': n + ' — ' + { ru: 'Русский', kk: 'Қазақша', en: 'English' }[l], onclick: () => setPref('lang', l) }, n))),
           h('button', { type: 'button', class: 'tool', 'data-focus': 'theme', onclick: () => setPref('theme', nextTheme[S.theme]) }, t('шапка.тема.' + S.theme)),
           h('button', { type: 'button', class: 'tool', 'data-focus': 'group', 'aria-pressed': S.group ? 'true' : 'false', title: t('шапка.группой.пояснение'), onclick: () => setPref('group', !S.group) }, t('шапка.группой')))),
-      lang() !== 'ru' ? h('p', { class: 'draft-lang' }, t('шапка.черновой-перевод')) : null);
+      lang() !== 'ru' ? h('p', { class: 'draft-lang' }, t('шапка.черновой-перевод')) : null,
+      // Пришла новая версия учебника (js/offline.js): она уже на устройстве и откроется по ссылке или при следующем запуске.
+      App.offline && App.offline.state === 'updated' ? h('p', { class: 'top-note', role: 'status' }, t('офлайн.обновлён'), ' ', h('a', { href: 'index.html' }, t('офлайн.открыть'))) : null);
     measureTop();
   }
   // Высота верхней полосы — в переменную --top-h. На широком экране полоса закреплена, и стили по этой

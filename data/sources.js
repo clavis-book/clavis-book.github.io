@@ -495,7 +495,7 @@ App.sources({
  },
  "project_rules": {
   "label": "README проекта, «Рамки»",
-  "title": "«Ключ и замок»: README.md, раздел «Рамки»",
+  "title": "Clavis: README.md, раздел «Рамки»",
   "file": "README.md",
   "section": "Программа не сканирует эфир, не подключается к сетям Wi-Fi, не работает с трафиком и не подбирает пароли",
   "primary": true,

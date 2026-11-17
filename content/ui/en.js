@@ -9,7 +9,7 @@ App.ui(String.raw`
 статус: не проверено носителем
 перевод с: 09.11.2026
 ---
-название: Key & Lock
+название: Clavis
 подзаголовок: an information security textbook and practicum
 путь: Path through the textbook
 скоро: coming soon
@@ -27,8 +27,9 @@ App.ui(String.raw`
 шапка.группой.пояснение: Large text and letters on answer options — for a class at a shared screen
 шапка.черновой-перевод: Draft interface translation: not yet checked by a native speaker.
 
-вход.заголовок: Key & Lock
+вход.заголовок: Clavis
 вход.текст: A textbook and practicum on information security: the course “Cryptographic Methods of Information Protection” and topics beyond it. Each section goes in steps — from “Simply” with everyday examples to “Deeper” at university level, with models, questions and game missions.
+вход.имя: Clavis is Latin for “key”. In 1606 that was the title of a booklet printed together with Johannes Trithemius’s “Steganographia”: it explained how the ciphers in its first two books worked. And in 1883 Auguste Kerckhoffs wrote down the rule modern cryptography rests on: everyone may know how the lock is built — only the key must be kept safe.
 вход.студенту: Students
 вход.студенту-текст: Section map, steps, questions with explanations and the “Kilt Bureau” mission in section 11
 вход.преподавателю: Teachers
@@ -178,4 +179,16 @@ qr.как: Show the code on the screen: students point their phone camera at it 
 qr.локальный: The textbook is open from this computer (localhost), so a phone won’t find it at this address. The code will work once the textbook is published online.
 qr.файл: The textbook is open as a file on this computer, so a phone won’t find it at this address. The QR code will appear here once the textbook is published online.
 qr.длинный: The textbook address is too long for a QR code. Shorten the folder path or open the published version.
+
+офлайн.заголовок: The textbook on this device
+офлайн.сохраняю: Saving the textbook to this device so that it opens without the internet…
+офлайн.готово: The textbook is saved on this device: it opens without the internet too.
+офлайн.обновлён: A new version of the textbook is out — it is already on this device.
+офлайн.открыть: Open the new version
+офлайн.установить: Install as an app
+офлайн.как: How to install on a phone or computer
+офлайн.android: Android, Chrome: menu ⋮ → “Install app” or “Add to Home screen” (the name depends on the version).
+офлайн.iphone: iPhone and iPad, Safari: the Share button → “Add to Home Screen”.
+офлайн.компьютер: Computer, Chrome or Edge: the install icon in the address bar, or the browser menu → “Install…”.
+офлайн.зачем: The installed textbook opens from an icon on your screen, in its own window, and works without the internet. Your progress stays on the device. On an iPhone, installing also protects your progress: Safari may erase the data of a site you have not opened for a week, but not of an installed one.
 `);

@@ -652,7 +652,7 @@ class MakeGroupTests(TempDirTestCase):
         with self.assertRaises(ValueError):
             self.generate(keys=self.variants / "keys")
         self.assertFalse((PROJECT_DIR / "teacher_only").exists())
-        # В репозитории проект — вся папка «Ключ и замок» (с data/ и docs/), а не только python/.
+        # В репозитории проект — вся папка Clavis (с data/ и docs/), а не только python/.
         with self.assertRaises(ValueError):
             self.generate(keys=ROOT_DIR / "teacher_only")
         self.assertFalse((ROOT_DIR / "teacher_only").exists())
