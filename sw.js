@@ -14,7 +14,7 @@
 'use strict';
 
 // ---- список файлов (пишет tools/offline.js; руками не править) ----
-const VERSION = '703d44e6961bbcc4';
+const VERSION = '09722dd87b2c258a';
 const FILES = {
   'content/ekzamen.js': 'uaClcJayDjd/8MEwJl2ePwZSaekqiKz/nvkrMgEIVOY=',
   'content/kk/r11-prosto.js': 'Csm8iakbRK0mc0Z3wCtuOuRFnKY6a8va20tg2x0iSPQ=',
@@ -58,7 +58,7 @@ const FILES = {
   'js/offline.js': 'GoXw4PrxMy9TyGp/53rcKo0+DKywmWLNnbFpLwBziY0=',
   'js/qr.js': 'hXEBpldJg4ptFrImc/NV5JvpUcoZ/+I5Yo+0wEhcVrA=',
   'js/store.js': 'NJ7K8B0/booZtQ1xCZsFxZZik8v1mePjfptjgorTfPM=',
-  'js/ui.js': 'p7A+nA/Sw0Ieeo/W1JsC6v6DEPRVR5OJM2l+vJrmtO8=',
+  'js/ui.js': 'EWUUUkB/pd2qIUk5QhcQw0IxZXwlFjsNXUJg1FFbmxg=',
   'manifest.webmanifest': 'IvoyqleuanSnoQiZceQh8M2jtyJRlWaFvMzqCgLW5ns=',
   'models/nonce-reuse.js': '+r6p61y24VlFpjRoC86m3yde1yvlNwfvett6xDGqMZw='
 };

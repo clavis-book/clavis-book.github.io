@@ -341,6 +341,12 @@ test('ссылки на файлы учебника: только из папк�
   assert.deepEqual(local(validate(App).issues), []);
 });
 
+test('список источников пишет «сверено» только у сверенного источника', () => {
+  const line = read('js/ui.js').split('\n').find(l => l.includes("t('ист.сверено'"));
+  assert.ok(line, 'в js/ui.js нет строки со словом «сверено»');
+  assert.match(line, /s\.checked && s\.verified \?/, 'у источника с verified: false не должно быть «сверено <дата>»');
+});
+
 test('«Проверь себя» Р11: 8 вопросов, верный ответ — на разных местах, не самый длинный и одной длины с другими', () => {
   const App = loadApp();
   const f = local(App.files.find(x => x.meta['раздел'] === 'r11' && x.meta['ступень'] === 'проверка'));

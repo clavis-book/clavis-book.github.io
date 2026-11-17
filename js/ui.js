@@ -130,7 +130,8 @@
           /^https:\/\//.test(s.url || '') ? h('a', { href: s.url, target: '_blank', rel: 'noopener noreferrer' }, name) : name,
           s.file ? h('span', { class: 'src-note' }, ' (' + s.file + ')') : '',
           c.locs.length ? ', ' + c.locs.join('; ') : '',
-          s.checked ? h('span', { class: 'src-note' }, ' — ' + t('ист.сверено', { когда: s.checked })) : '',
+          // «Сверено» — только у сверенного источника; у остальных дата не показывается, стоит пометка «[проверить]».
+          s.checked && s.verified ? h('span', { class: 'src-note' }, ' — ' + t('ист.сверено', { когда: s.checked })) : '',
           s.verified ? '' : h('span', { class: 'check' }, t('ист.проверить')),
           what ? h('details', { class: 'src-more' }, h('summary', {}, t('ист.что-сверено')), h('p', { class: 'src-note' }, what)) : null);
       })));
