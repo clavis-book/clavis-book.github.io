@@ -42,7 +42,7 @@ test('счётчик «разобрано N из 117» равен числу в�
   assert.equal(cov.total, 117);
   assert.equal(cov.covered, marked.size);
   assert.deepEqual(Object.keys(cov.where).sort(), [...marked].sort());
-  // Уже разобраны: «секретен только ключ» (раздел 11, «Просто») и повтор вектора инициализации (миссия).
+  // Уже разобраны: «секретен только ключ» (раздел 11, «Введение») и повтор вектора инициализации (миссия).
   assert.deepEqual(cov.where['l10-01'], [{ section: 'r11', step: 'просто' }]);
   assert.deepEqual(cov.where['l14-07'], [{ section: 'r11', step: 'попробуй' }]);
   const { stats } = App.model.validate({ expected: CONTENT(), model: App.NonceReuse });

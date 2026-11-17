@@ -51,10 +51,10 @@ App.ui(String.raw`
 страница.статус.checked: translation checked by a native speaker
 
 вход.заголовок: Clavis
-вход.текст: A textbook and practicum on information security: the course “Cryptographic Methods of Information Protection” and topics beyond it. Each section goes in steps — from “Simply” with everyday examples to “Deeper” at university level, with models, questions and game missions.
+вход.текст: A textbook and practicum on information security: the course “Cryptographic Methods of Information Protection” and topics beyond it. Each section goes in steps — from the “Introduction” with everyday examples to the “In depth” step at university level, with models, questions and game missions.
 вход.имя: Clavis is Latin for “key”. In 1606 Johannes Trithemius’s “Steganographia” came out together with a booklet called “Clavis Steganographiae” — the key to its ciphers. And in 1883 Auguste Kerckhoffs wrote down the rule modern cryptography rests on: everyone may know how the lock is built — only the key must be kept safe.
 вход.студенту: Students
-вход.студенту-текст: Section map, steps, questions with explanations and the “Kilt Bureau” mission in section 11
+вход.студенту-текст: Section map, steps, questions with explanations and the Tumar Bureau mission in section 11
 вход.преподавателю: Teachers
 вход.преподавателю-текст: Ready for class: the “mission in class” scenario, the lab, a QR code for phones. The dashboard comes later
 вход.проектор: Projector mode
@@ -69,7 +69,7 @@ App.ui(String.raw`
 карта.текст: Sections open in any order; the path “from scratch” follows the numbers. Section 11 is ready first — a good place to start.
 карта.пройдено: done
 карта.впереди: ahead
-карта.отметки: marks — Simply, Try it, Deeper, Check yourself
+карта.отметки: marks — Introduction, Practice, In depth, Self-check
 карта.плитка: Section {n}: {название}. Steps marked: {отмечено} of 4
 карта.флагман: ready first
 карта.коллекция: Collection on this device
@@ -82,11 +82,11 @@ App.ui(String.raw`
 раздел.лекции: lectures {n}
 раздел.все-лекции: all lectures
 ступени.меню: Section steps
-ступень.prosto: Simply
-ступень.poprobuy: Try it
-ступень.glubzhe: Deeper
-ступень.proverka: Check yourself
-ступень.doma: At home
+ступень.prosto: Introduction
+ступень.poprobuy: Practice
+ступень.glubzhe: In depth
+ступень.proverka: Self-check
+ступень.doma: Application
 ступень.prepod: For teachers
 ступень.нет-плана: This step will appear later.
 ступень.перевод-устарел: translation out of date
@@ -185,7 +185,7 @@ App.ui(String.raw`
 преподавателю.заголовок: For teachers
 преподавателю.текст: What is ready for class, by section: a lesson scenario, the lab and a QR code so students can open the section on their phones. The dashboard with groups and submissions will come later.
 проектор.заголовок: Projector mode
-проектор.текст: A mode for a shared screen will be here: a large model, question of the day and class stages with a timer. It will appear later. For now, use the “Group mode” button in the top bar.
+проектор.текст: A mode for a shared screen will be here: a large model, question of the day and class stages with a timer. It will appear later. For now, use the “Group mode” switch in Settings.
 нет.заголовок: No such page
 нет.на-вход: To the home page
 // Added 15.11.2026 (teacher page, QR code).
@@ -197,8 +197,8 @@ App.ui(String.raw`
 qr.заголовок: QR code: students open the section on their phones
 qr.куда: Where the code leads
 qr.цель.просто: Section 11 from the start
-qr.цель.миссия: The “Kilt Bureau” mission
-qr.цель.проверка: Section 11, “Check yourself”
+qr.цель.миссия: The Tumar Bureau mission
+qr.цель.проверка: Section 11, “Self-check”
 qr.подпись: QR code with a link: {куда}
 qr.крупно: Large — for the projector
 qr.как: Show the code on the screen: students point their phone camera at it and open the link.

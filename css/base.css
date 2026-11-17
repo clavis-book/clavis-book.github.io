@@ -389,7 +389,12 @@ h1:focus, h2:focus, h3:focus { outline: none; }
    групп выбора) рамка рисуется внутри кнопки, а не снаружи. */
 .nav a:focus-visible, .steps a:focus-visible, .seg button:focus-visible { outline-offset: -3px; }
 @media (max-width: 40rem) { .steps { margin-inline: -16px; width: auto; max-width: none; } .steps ol { padding-inline: 16px; scroll-padding-inline: 16px; } }
-.steps .tick { margin-left: .35rem; }
+/* Отметка «пройдено» в ряду ступеней — точка, а не полоска, как на плитке карты: ряд остаётся коротким. */
+.steps .tick { width: .5rem; height: .5rem; border-radius: 50%; margin-left: .35rem; }
+/* На широком экране шесть ступеней с отметками помещаются целиком: пункты компактнее, а ряд может быть шире
+   колонки текста (справа от неё — поля для заметок). Уже 48rem ряд по-прежнему прокручивается вбок. */
+@media (min-width: 48rem) { .steps ol { gap: 0; } .steps a { padding-inline: .55rem; } }
+@media (min-width: 64rem) { .steps.reading { max-width: 50rem; } }
 .map { list-style: none; margin: 0; padding: 0; }
 .map > li { display: grid; }
 .entry .tile { min-height: 7rem; grid-template-columns: 1fr; }
