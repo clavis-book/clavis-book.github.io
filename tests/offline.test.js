@@ -105,16 +105,19 @@ test('sw.js: к сети — два обращения, оба к своему �
   once('headers', "return new Response(body, { headers: { 'Content-Type': TYPES[file.split('.').pop()] || 'application/octet-stream', 'X-Content-Type-Options': 'nosniff' } });");
   once('credentials', "credentials: 'omit'");
   once('btoa', 'return btoa(String.fromCharCode(...sum));');
-  const flat = swCode.replace(/\s+/g, '').replace(/\?\./g, '.');
+  const flat = swCode.replace(/\s+/g, '').replace(/\?\./g, '.').replace(/["`]/g, "'");
   const forbidden = [
     'importScripts', 'eval(', 'newFunction', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'sendBeacon', 'RTCPeerConnection',
     'postMessage', 'BroadcastChannel', 'MessageChannel', 'clients.', 'registration', 'indexedDB', 'localStorage', 'cookie',
     'navigator', 'Notification', "'push'", "'sync'", "'message'", "'notificationclick'", 'http:', 'https:', '.add(', '.addAll(',
-    "method:'", 'body:', 'atob', 'import('
+    "method:'", 'body:', 'atob', 'import(', 'Reflect', 'redirect(', 'formData', 'launchQueue', "'//", 'ws:', 'wss:'
   ];
   assert.deepEqual(forbidden.filter(w => flat.includes(w)), []);
   // События — только три: установка, включение, запрос.
-  assert.deepEqual([...swCode.matchAll(/addEventListener\(\s*'([^']+)'/g)].map(m => m[1]), ['install', 'activate', 'fetch']);
+  assert.deepEqual([...swCode.matchAll(/addEventListener\s*\(\s*['"`]([^'"`]+)['"`]/g)].map(m => m[1]), ['install', 'activate', 'fetch']);
+  assert.doesNotMatch(swCode, /\bon[a-z]+\s*=(?!=)/, 'обработчик события через on…=');
+  assert.doesNotMatch(swCode, /[\w$)\]]\s*\[\s*['"`]/, "обращение к свойству по строке ['…']");
+  assert.doesNotMatch(swCode, /(?<![\w$'"`])fetch\b(?!\s*\()/, 'fetch не как прямой вызов (другое имя, .call, Reflect.apply)');
   // Адреса строятся только от папки самого sw.js.
   assert.deepEqual([...swCode.matchAll(/new URL\([^)]*\)/g)].map(m => m[0]), ["new URL('./', self.location.href)", 'new URL(file, BASE)']);
   // В списке — только относительные имена файлов и отпечатки SHA-256.
@@ -123,6 +126,17 @@ test('sw.js: к сети — два обращения, оба к своему �
     assert.ok(TYPES_IN_SW.includes(' ' + path.extname(f).slice(1) + ': '), 'в sw.js (TYPES) нет вида содержимого для ' + f);
     assert.match(hash, /^[A-Za-z0-9+/]{43}=$/, 'отпечаток ' + f);
   }
+});
+
+// sw.js — единственный код учебника вне CSP страницы: политика из <meta> на сервис-воркер не действует, а GitHub
+// Pages своих заголовков не ставит. Поэтому проверки по словам выше — второй рубеж, а исключение для воркера —
+// самое узкое: код вне списка файлов закреплён отпечатком SHA-256 целиком, вместе с комментариями, а блок списка
+// должен быть ровно тем, что пишет tools/offline.js. Изменился хоть знак — тест остановит. Новый отпечаток
+// вписывают сюда только после проверки правки по рамке 1 и с причиной в сообщении коммита.
+const SW_REVIEWED = 'YSViSjdg9bhx4VR4Yi9YLlkU+oAFeifqrTARBjXEAps=';
+test('sw.js: код воркера — тот, что проверен по рамке 1; в блоке списка — только список', () => {
+  assert.equal(sha(swCode), SW_REVIEWED, 'код sw.js вне списка файлов изменён: проверьте правку по рамке 1 и впишите новый отпечаток');
+  assert.equal(SW.slice(SW.indexOf(tool.START), SW.indexOf(tool.END) + tool.END.length), tool.block(listed), 'в блоке списка файлов есть что-то кроме списка');
 });
 
 // ---------- 2. Сервис-воркер: работа на подставных хранилище и сети ----------
@@ -426,6 +440,10 @@ test('манифест: название, запуск в своём окне и
   assert.equal(m.start_url, 'index.html');
   assert.equal(m.scope, './');
   assert.equal(m.lang, 'ru');
+  // Только эти поля. Другие дают учебнику входы извне — файлы системы (file_handlers), «Поделиться» (share_target),
+  // ссылки web+… (protocol_handlers) — или чужие адреса (related_applications, scope_extensions).
+  assert.deepEqual(Object.keys(m).sort(), ['background_color', 'categories', 'description', 'dir', 'display', 'icons', 'id', 'lang', 'name', 'scope', 'short_name', 'start_url', 'theme_color']);
+  for (const icon of m.icons) assert.deepEqual(Object.keys(icon).sort(), ['purpose', 'sizes', 'src', 'type'], 'поля значка ' + icon.src);
   for (const icon of m.icons) {
     assert.doesNotMatch(icon.src, /^[a-z]+:|^\/|\.\./i, 'значок — только из папки учебника: ' + icon.src);
     if (icon.type === 'image/png') assert.equal(pngSize(icon.src), icon.sizes, icon.src);

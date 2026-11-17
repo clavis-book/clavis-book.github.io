@@ -39,10 +39,11 @@ const FORBIDDEN = [
   ['insertAdjacentHTML', 'вставка HTML'], ['document.write', 'вставка HTML'], ['srcdoc', 'вставка HTML'],
   ['createContextualFragment', 'вставка HTML'], ['DOMParser', 'вставка HTML'], ['javascript:', 'код в адресе'],
   ['window.open(', 'новое окно из кода'], ['postMessage', 'обмен с другими окнами'], ['document.cookie', 'cookie'],
-  ['navigator.', 'доступ к устройству'], ['setAttribute(\'on', 'обработчик строкой'], ['setAttribute("on', 'обработчик строкой'],
+  ['navigator', 'доступ к устройству'], ['setAttribute(\'on', 'обработчик строкой'], ['setAttribute("on', 'обработчик строкой'],
   ['setAttribute(\'style', 'стиль строкой'], ['.cssText', 'стиль строкой'],
   // Страница не читает файлы и не принимает вставку и перетаскивание: модели получают только ввод полигона.
-  ['FileReader', 'чтение файлов'], ['showOpenFilePicker', 'чтение файлов'], ['showDirectoryPicker', 'чтение файлов'],
+  ['FileReader', 'чтение файлов'], ['launchQueue', 'файлы из системы'], ['getFile', 'чтение файлов'], ['getAsFile', 'чтение файлов'],
+  ['webkitGetAsEntry', 'чтение файлов'], ['webkitdirectory', 'чтение файлов'], ['showOpenFilePicker', 'чтение файлов'], ['showDirectoryPicker', 'чтение файлов'],
   ["type: 'file'", 'загрузка файлов'], ['type="file"', 'загрузка файлов'], ['dataTransfer', 'перетаскивание файлов'],
   ["'drop'", 'перетаскивание файлов'], ['ondrop', 'перетаскивание файлов'], ['clipboardData', 'вставка из буфера'],
   ["'paste'", 'вставка из буфера'], ['onpaste', 'вставка из буфера']
@@ -97,6 +98,8 @@ function problems(rel, source) {
     if (/\blocation\b(?!\.hash\b)/.test(reads)) found.push(rel + ': из адреса страницы разрешён только location.hash');
     if (/(?<![\w$.])(?<!function\s+)open\s*\(|(?:window|self|globalThis|top|parent)\s*\??\.\s*open\b/.test(text)) found.push(rel + ': новое окно из кода');
     if (/\.click\s*\(/.test(text)) found.push(rel + ': нажатие из кода');
+    if (/\[\s*['"`][^'"`\n]*['"`]\s*\+|\+\s*['"`][^'"`\n]*['"`]\s*\]/.test(text)) found.push(rel + ': имя свойства склейкой строк');
+    if (/\b(?:parent|opener|frames)\b|(?:window|self|globalThis)\s*\??\.\s*top\b|\btop\s*\??\.\s*\w/.test(text)) found.push(rel + ': обращение к другим окнам');
     if (/["'`](?:file|drop|paste|drag\w*)["'`]/.test(text)) found.push(rel + ': файлы, перетаскивание или вставка');
     if (/setAttribute(?:NS)?\s*\(\s*(?:[\w.]+\s*,\s*)?["'`](?:href|src|srcset|action|formaction|data|poster|ping|xlink:href)["'`]/.test(text)) found.push(rel + ': адрес через setAttribute');
   }
@@ -143,7 +146,10 @@ test('проверка проверяющего: на плохом коде ср
     "fetch (u)", "h ('img', { src: u })", 'h("input", { type: "file" })', "h('input', {type:'file'})", "inp.type = 'file'",
     'el.addEventListener("drop", f)', 'el.addEventListener("paste", f)', "el.addEventListener('dragover', f)",
     "open(u)", "window.open (u)", "window?.open(u)", "Object.assign(location, { href: u })", "const L = location; L.assign(u)",
-    "location?.assign(u)", "a.click()", "el.setAttribute('href', u)", 'el.setAttributeNS(ns, "xlink:href", u)'
+    "location?.assign(u)", "a.click()", "el.setAttribute('href', u)", 'el.setAttributeNS(ns, "xlink:href", u)',
+    // Склейка имён, другие окна, деструктуризация navigator, файлы системы.
+    "window['fe' + 'tch'](u)", "window.parent['post' + 'Message'](d, '*')", 'opener.focus()', 'const { connection } = navigator;',
+    'window.launchQueue.setConsumer(f)', 'h.getFile()'
   ];
   for (const line of bad) assert.ok(problems('js/proba.js', line).length, 'не поймано: ' + line);
   // Разрешённое — не ловится.
@@ -193,6 +199,7 @@ test('каждая страница: CSP без unsafe-inline и с Trusted Type
     assert.match(html, /<meta charset="utf-8">/);
     assert.match(html, /<meta name="text-scale" content="scale">/, f + ': страница должна учитывать системный размер текста');
     assert.match(html, /<meta name="referrer" content="no-referrer">/);
+    assert.deepEqual([...body.matchAll(/http-equiv\s*=\s*["']?([^"'\s>]+)/gi)].map(m => m[1].toLowerCase()), ['content-security-policy'], f + ': из http-equiv — только CSP');
   }
 });
 
@@ -213,6 +220,111 @@ test('стили: ничего внешнего, шрифты лежат в пр
   }
   // Размер шрифта на :root и html не задаётся: страница объявляет text-scale.
   assert.doesNotMatch(css, /(?:^|[\s,}])(?::root|html)(?:[.\[][^{]*)?\s*\{[^}]*font-size/m, 'font-size на :root или html');
+});
+
+// Сайт раздаёт всё, что лежит в репозитории. Страница или SVG в любой папке — документ того же сайта, с доступом к
+// хранилищу учебника, но без проверок выше (CSP, скрипты). Поэтому такие файлы — только из короткого списка.
+test('документы, которые браузер выполняет (html, svg, xml), — только страница учебника и значки', () => {
+  const ACTIVE = /\.(?:x?html?|shtml|svgz?|xml|xslt?|mht(?:ml)?)$/i;
+  const walk = dir => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap(d => {
+    const rel = dir ? dir + '/' + d.name : d.name;
+    return d.isDirectory() ? (['.git', 'node_modules', '__pycache__'].includes(d.name) ? [] : walk(rel)) : [rel];
+  });
+  assert.deepEqual(walk('').filter(f => ACTIVE.test(f)).sort(), ['icons/icon-dark.svg', 'icons/icon.svg', 'index.html']);
+});
+
+// Код для Node — инструменты (tools/) и тесты — на страницу не подключается, но лежит в том же репозитории и на сайте
+// и запускается на компьютере автора и преподавателя. Сети в нём тоже нет: модули — только из списка, программы
+// запускают только tools/check.js (node и Python) и tests/offline.test.js (git, список файлов репозитория).
+const NODE_MODULES = ["'node:test'", "'node:assert/strict'", "'node:fs'", "'node:path'", "'node:vm'", "'node:crypto'", "'node:child_process'",
+  "'./load.js'", "'../tools/offline.js'", "'../js/qr.js'", 'NR', "path.join(ROOT, 'models', 'nonce-reuse.js')", "path.join(__dirname, '..', 'nonce-reuse.js')"];
+// Кто и чем запускает программы. В tools/check.js программа — только node (process.execPath) или Python (PYTHON[0]):
+// первый аргумент каждого run(…) и второй элемент каждой строки списка сверок — из этих двух.
+const LAUNCH = {
+  'tools/check.js': { fn: 'spawnSync', calls: ['spawnSync(cmd, args, {'] },
+  'tests/offline.test.js': { fn: 'execFileSync', calls: ["execFileSync('git', ['-c', 'core.quotepath=off', 'ls-files', '-z'], {"] }
+};
+function nodeProblems(f, src) {
+  const found = [];
+  for (const m of src.matchAll(/\brequire\s*\(((?:[^()]|\([^()]*\))*)\)/g)) {
+    const arg = m[1].trim();
+    if (!NODE_MODULES.includes(arg)) found.push(f + ': модуль ' + arg);
+  }
+  // Запуск программ: модуль — только в двух файлах, функция — одна своя на файл, вызовы — ровно из списка.
+  // Этот файл называет модуль в своих списках как данные, поэтому для него — только по настоящему подключению.
+  if (/require\s*\(\s*'node:child_process'\s*\)/.test(src) || (f !== 'tests/web-frame.test.js' && /child_process/.test(src))) {
+    const own = LAUNCH[f];
+    if (!own) found.push(f + ': запуск программ');
+    else {
+      const imports = [...src.matchAll(/(?:\{([^}]*)\}\s*=\s*require\s*\(\s*'node:child_process'\s*\)|require\s*\(\s*'node:child_process'\s*\)\s*\.\s*(\w+))/g)];
+      const names = imports.flatMap(m => (m[1] || m[2]).split(',').map(s => s.trim()).filter(Boolean));
+      const uses = (src.match(/child_process/g) || []).length;
+      if (uses !== imports.length || !names.length || names.some(n => n !== own.fn)) found.push(f + ': из child_process — только ' + own.fn + ' и только так: { ' + own.fn + ' } = …');
+      // Каждое упоминание функции — либо в самом подключении, либо вызов ровно из списка (не под другим именем).
+      const spans = imports.map(m => [m.index, m.index + m[0].length]);
+      for (const m of src.matchAll(new RegExp('\\b' + own.fn + '\\b', 'g'))) {
+        const inImport = spans.some(([a, b]) => m.index >= a && m.index < b) && !src.startsWith(own.fn + '(', m.index);
+        if (!inImport && !own.calls.some(c => src.startsWith(c, m.index))) found.push(f + ': запуск не из списка: ' + src.slice(m.index, m.index + 60));
+      }
+      if (f === 'tools/check.js') {
+        if (/\brun\b(?!\s*\()/.test(src)) found.push(f + ': run под другим именем');
+        const progs = [...src.matchAll(/\brun\s*\(\s*([^,)]+)/g)].map(m => m[1].trim()).filter(a => a !== 'cmd');
+        const rows = [...src.matchAll(/\[\s*(['"`])[^'"`]*\1\s*,\s*([^,]+?)\s*,\s*\[/g)].map(m => m[2].trim());
+        for (const p of [...progs, ...rows]) if (!['process.execPath', 'PYTHON[0]'].includes(p)) found.push(f + ': программа ' + p);
+      }
+    }
+  }
+  // Этот файл сам называет слово в правилах, поэтому правило «не как вызов» к нему не применяется.
+  if (f !== 'tests/web-frame.test.js' && /(?<![\w$.'"`])require\b(?!\s*\(|\.main\b)/.test(src)) found.push(f + ': модуль под другим именем');
+  if (/(?<![\w$'"`])import\s*\(|^\s*import\s|process\s*\.\s*(?:binding|dlopen)/m.test(src)) found.push(f + ': загрузка кода');
+  if (/['"`](?:curl|wget|powershell|pwsh|bitsadmin|certutil|netsh|ftp|tftp|ping|ssh|scp|nc|ncat|mshta|rundll32)(?:\.exe)?['"`]/i.test(src)) found.push(f + ': сетевая программа');
+  if (f.startsWith('tools/') && /\b(?:fetch|WebSocket|XMLHttpRequest|EventSource|sendBeacon)\b/.test(src)) found.push(f + ': сеть');
+  return found;
+}
+
+// Каждый .js в репозитории — под одной из трёх проверок: код страницы (выше), sw.js (tests/offline.test.js) или
+// правила для Node. Новый файл в любой папке не останется без проверки.
+test('инструменты и тесты для Node: модули из списка, без сети и сетевых программ', () => {
+  const walk = dir => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap(d => {
+    const rel = dir ? dir + '/' + d.name : d.name;
+    return d.isDirectory() ? (['.git', 'node_modules'].includes(d.name) ? [] : walk(rel)) : [rel];
+  });
+  const site = siteJs();
+  const files = walk('').filter(f => /\.[cm]?js$/.test(f) && f !== 'sw.js' && !site.includes(f)).sort();
+  for (const must of ['tools/check.js', 'tools/offline.js', 'tests/load.js', 'tests/web-frame.test.js', 'models/tests/frame.test.js']) assert.ok(files.includes(must), 'не проверяется ' + must);
+  assert.deepEqual(files.filter(f => !/^(?:tools|tests|models\/tests)\//.test(f)), [], 'код для Node — только в tools/, tests/, models/tests/');
+  assert.deepEqual(files.flatMap(f => nodeProblems(f, read(f))), []);
+});
+
+// Проверка проверяющего для правил Node. Образцы собираются из частей (REQ, IMP, PROC, «…» → кавычки), чтобы этот файл
+// сам не попадал под правила, которые проверяет.
+test('проверка проверяющего: правила для Node ловят сеть, чужие модули и запуск программ', () => {
+  const s = x => x.replace(/REQ/g, 'req' + 'uire').replace(/IMP/g, 'imp' + 'ort').replace(/PROC/g, 'pro' + 'cess').replace(/[«»]/g, "'");
+  const bad = [
+    ['tools/offline.js', "REQ(«node:https»).get(«https://u.example/»)"],
+    ['tools/offline.js', "REQ(«https»)"],
+    ['tools/offline.js', "const r = REQ; r(«node:net»)"],
+    ['tools/offline.js', "IMP(«node:http»)"],
+    ['tools/offline.js', "PROC.binding(«tcp_wrap»)"],
+    ['tools/offline.js', "fetch(«//u.example/»)"],
+    ['tools/offline.js', "const W = WebSocket"],
+    ['tests/qr.test.js', "const { spawnSync } = REQ(«node:child_process»)"],
+    ['tools/check.js', "const { spawnSync, exec } = REQ(«node:child_process»); exec(«x»)"],
+    ['tools/check.js', "const cp = REQ(«node:child_process»); cp.spawnSync(«x»)"],
+    ['tools/check.js', "const { spawnSync } = REQ(«node:child_process»); spawnSync(«msiexec», [])"],
+    ['tools/check.js', "const { spawnSync } = REQ(«node:child_process»); run(«msiexec», [])"],
+    ['tools/check.js', "const { spawnSync } = REQ(«node:child_process»); for (const [n, c, a] of [[«x», «schtasks», []]]) run(c, a);"],
+    ['tests/offline.test.js', "REQ(«node:child_process»).execFileSync(«git», [«push»])"],
+    ['tests/offline.test.js', "REQ(«node:child_process»).execFileSync(«git», [«-c», «core.quotepath=off», «ls-files», «-z»]); X(«bitsadmin»)"]
+  ];
+  for (const [f, line] of bad) assert.ok(nodeProblems(f, s(line)).length, 'не поймано: ' + f + ': ' + s(line));
+  // Разрешённое — не ловится.
+  const good = [
+    ['tests/qr.test.js', "const test = REQ(«node:test»); const { ROOT } = REQ(«./load.js»);"],
+    ['tools/check.js', "const { spawnSync } = REQ(«node:child_process»);\nfunction run(cmd, args) { return spawnSync(cmd, args, { cwd }); }\nrun(process.execPath, []); run(PYTHON[0], []);"],
+    ['tests/offline.test.js', "REQ(«node:child_process»).execFileSync(«git», [«-c», «core.quotepath=off», «ls-files», «-z»], { cwd: ROOT })"]
+  ];
+  for (const [f, line] of good) assert.deepEqual(nodeProblems(f, s(line)), [], 'ложная тревога: ' + f);
 });
 
 test('ссылки наружу в текстах — только https и открываются отдельно; внутренние — по #, файлы — из docs/', () => {
