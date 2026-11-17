@@ -14,7 +14,7 @@
 'use strict';
 
 // ---- список файлов (пишет tools/offline.js; руками не править) ----
-const VERSION = '8161f2571696b58e';
+const VERSION = '703d44e6961bbcc4';
 const FILES = {
   'content/ekzamen.js': 'uaClcJayDjd/8MEwJl2ePwZSaekqiKz/nvkrMgEIVOY=',
   'content/kk/r11-prosto.js': 'Csm8iakbRK0mc0Z3wCtuOuRFnKY6a8va20tg2x0iSPQ=',
@@ -34,7 +34,7 @@ const FILES = {
   'content/ui/ru.js': 'tqCWKXMrsT57CAYRyIxAogcNCtYq8yum3P9zAhAV0xE=',
   'css/base.css': 'JmfcYF4gw+4Lu5jCq9lgwCIQ/vrKQcCDiV8H8m0ihJo=',
   'css/mission.css': '6+g8Y53rkSeXtxc2CD8n+5uYHTx7+Rb2205aqfLL7jg=',
-  'data/sources.js': 'GhR1RbXG4SSTyQD/6yzPicqH3dOibgOHikLFzQHFiHY=',
+  'data/sources.js': 'W0e+1pZ0wK3Ds7Kx1SqecTmG3KnbbrSPvVXpL0f107Q=',
   'docs/lab/Лабораторная_WiFi.docx': '0T7BbzogByKhU5B/NbrcMUxA0O73DZJ/6T2hiFyRgj4=',
   'docs/lab/Лабораторная_WiFi.md': 'HHHBMulzCHbJcK78ecFBJsWUH1382jHc8NjY1YfSR6Q=',
   'fonts/Lora-Italic.ttf': 'ItjYhUtTgHqmZMo08gMantV6HQ3qKWuLls3Tqtk3orM=',
