@@ -14,7 +14,7 @@
 'use strict';
 
 // ---- список файлов (пишет tools/offline.js; руками не править) ----
-const VERSION = '058fa94eb9308433';
+const VERSION = 'aa77f0d0c5fc63d4';
 const FILES = {
   'content/ekzamen.js': 'uaClcJayDjd/8MEwJl2ePwZSaekqiKz/nvkrMgEIVOY=',
   'content/kk/r11-prosto.js': 'Csm8iakbRK0mc0Z3wCtuOuRFnKY6a8va20tg2x0iSPQ=',
@@ -57,8 +57,8 @@ const FILES = {
   'js/mission.js': 'EGTGU3OGhiqpyftanvz3Amoo3H2LcMP+a/kvNgy22yU=',
   'js/offline.js': 'GoXw4PrxMy9TyGp/53rcKo0+DKywmWLNnbFpLwBziY0=',
   'js/qr.js': 'hXEBpldJg4ptFrImc/NV5JvpUcoZ/+I5Yo+0wEhcVrA=',
-  'js/store.js': 'ttZTyvczm/EuJXV0dnqAftEbHouIModh2GXvML5Rpo0=',
-  'js/ui.js': 'Pkj71im+R4Vc1jv+LkEVcDwsrzr/fSbh4arcq3AOkOA=',
+  'js/store.js': 'NJ7K8B0/booZtQ1xCZsFxZZik8v1mePjfptjgorTfPM=',
+  'js/ui.js': 'p7A+nA/Sw0Ieeo/W1JsC6v6DEPRVR5OJM2l+vJrmtO8=',
   'manifest.webmanifest': 'IvoyqleuanSnoQiZceQh8M2jtyJRlWaFvMzqCgLW5ns=',
   'models/nonce-reuse.js': '+r6p61y24VlFpjRoC86m3yde1yvlNwfvett6xDGqMZw='
 };

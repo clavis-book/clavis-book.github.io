@@ -148,7 +148,7 @@ test('проверка проверяющего: на плохом коде ср
   for (const line of bad) assert.ok(problems('js/proba.js', line).length, 'не поймано: ' + line);
   // Разрешённое — не ловится.
   assert.deepEqual(problems('js/proba.js', "// здесь нет сети и вставки HTML-строк\nel.replaceChildren(h('p', {}, text));\nsetTimeout(tick, 55);\nlocation.hash = 'karta';\nif (location.hash === '#x') s('line', { x1: 0 });\nfunction open(id) { return id; }\nApp.missionView.open(r.mission);"), []);
-  assert.deepEqual(problems('js/ui.js', "localStorage.getItem('kilt:v1')"), []);
+  assert.deepEqual(problems('js/ui.js', "localStorage.getItem('clavis:v1')"), []);
   // Исключение для QR-кода — только функция pageBase слово в слово и только в js/interactives.js.
   assert.deepEqual(problems('js/interactives.js', '  ' + QR_PAGE_BASE + '\n'), []);
   assert.ok(problems('js/proba.js', QR_PAGE_BASE).length, 'чтение адреса вне js/interactives.js');

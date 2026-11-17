@@ -258,8 +258,51 @@ test('хранилище: у данных есть версия схемы, ис
   assert.deepEqual(read1(saved), { newer: false, state: saved });
   // Запись более новой версии учебника не читаем и не перезаписываем.
   assert.deepEqual(read1(Object.assign({}, saved, { schema: ST.SCHEMA + 1 })), { newer: true, state: empty });
-  assert.equal(ST.KEY, 'kilt:v1');
+  assert.equal(ST.KEY, 'clavis:v1');
   assert.match(read('js/ui.js'), /if \(newer\) return;/, 'запись более новой версии не должна перезаписываться');
+});
+
+test('хранилище: прогресс со старого ключа kilt:v1 переносится под clavis:v1 один раз и без потерь', () => {
+  const ST = loadApp().storage;
+  assert.deepEqual(local(ST.OLD_KEYS), ['kilt:v1']);
+  // Подделка хранилища браузера: limit — сколько записей помещается, fail — запись бросает исключение.
+  function fake(init, { limit = Infinity, fail = false } = {}) {
+    const m = new Map(Object.entries(init));
+    return { m, getItem: k => (m.has(k) ? m.get(k) : null),
+      setItem(k, v) { if (fail) throw new Error('QuotaExceededError'); if (m.has(k) || m.size < limit) m.set(k, String(v)); },
+      removeItem: k => { m.delete(k); } };
+  }
+  const old = JSON.stringify({ schema: 1, lang: 'ru', theme: 'dark', group: false, progress: { r11: { prosto: true } },
+    quiz: { r11: { 'r11-01': 'right' } }, collection: { cards: ['r11-m01:gamma'], badges: [] } });
+  // Обычный случай: запись переехала слово в слово, старый ключ удалён, второй заход читает уже новый.
+  const a = fake({ 'kilt:v1': old, 'chuzhoe': 'x' });
+  assert.equal(ST.load(a), old);
+  assert.deepEqual(Object.fromEntries(a.m), { 'clavis:v1': old, 'chuzhoe': 'x' });
+  assert.equal(ST.load(a), old);
+  assert.deepEqual(Object.fromEntries(a.m), { 'clavis:v1': old, 'chuzhoe': 'x' });
+  // Под новым ключом уже есть запись: она главная, старая не трогается.
+  const b = fake({ 'clavis:v1': '{"schema":1}', 'kilt:v1': old });
+  assert.equal(ST.load(b), '{"schema":1}');
+  assert.equal(b.m.get('kilt:v1'), old);
+  // Хранилище переполнено (запись молча не легла) или запрещено (исключение): старая запись остаётся,
+  // страница её всё равно получает, перенос повторится в следующий раз.
+  for (const opts of [{ limit: 1 }, { fail: true }]) {
+    const c = fake({ 'kilt:v1': old }, opts);
+    assert.equal(ST.load(c), old, JSON.stringify(opts));
+    assert.deepEqual(Object.fromEntries(c.m), { 'kilt:v1': old }, JSON.stringify(opts));
+  }
+  // Пусто — пусто; запись более новой версии переносится как есть и по-прежнему не перезаписывается (read → newer).
+  assert.equal(ST.load(fake({})), null);
+  const newer = JSON.stringify({ schema: ST.SCHEMA + 1, lang: 'kk' });
+  const d = fake({ 'kilt:v1': newer });
+  assert.equal(local(ST.read(ST.load(d), ['ru', 'kk', 'en'])).newer, true);
+  assert.equal(d.m.get('clavis:v1'), newer);
+  // Страница читает хранилище только через перенос, а старый ключ в коде страницы больше нигде не встречается.
+  assert.match(read('js/ui.js'), /text = ST\.load\(localStorage\);/);
+  assert.doesNotMatch(read('js/ui.js'), /getItem\(/);
+  for (const f of ['js/app.js', 'js/ui.js', 'js/interactives.js', 'js/mission.js', 'js/offline.js', 'index.html', 'sw.js']) {
+    assert.doesNotMatch(read(f), /kilt:v1/, f);
+  }
 });
 
 test('прогресс и коллекция хранятся по кодам, а не по текстам', () => {
