@@ -52,42 +52,113 @@ h2 { font-size: 1.32rem; }
 h3 { font-size: 1.08rem; }
 
 /* ---------- Верхняя полоса ---------- */
+/* Одна строка на любой ширине: название, разделы приложения, кнопка «Настройки». Полоса закреплена сверху и на
+   телефоне: она занимает одну строку, а кнопка настроек всегда под рукой. */
 .top {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--sheet); border-bottom: 1px solid var(--rule);
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-.top-in { max-width: 76rem; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding-block: .55rem; }
-.brand { font-family: var(--display); font-weight: 600; font-size: 1.05rem; text-decoration: none; color: var(--ink); display: flex; align-items: baseline; gap: .5rem; }
-.brand { white-space: nowrap; }   /* название не рвётся на две строки; на узком экране переносится подзаголовок */
-.brand small { font-family: var(--body); font-weight: 400; color: var(--ink-2); font-size: .8rem; white-space: normal; }
-/* Знак учебника перед названием — замок с ключом на дужке: «бумага» в светлой теме, «изумруд» в тёмной.
-   Меняется вместе с темой, как и цвета: и по настройке системы, и по кнопке «Тема». */
-.brand::before { content: ""; flex: none; align-self: center; width: 2rem; height: 2rem; background: url("../icons/icon.svg") center / contain no-repeat; }
+.top-in { max-width: 76rem; margin: 0 auto; display: flex; flex-wrap: nowrap; align-items: center; gap: .75rem; padding-block: .45rem; }
+/* Название — кнопка: открывает карточку «Об учебнике». Знак перед ним — замок с ключом на дужке:
+   «бумага» в светлой теме, «изумруд» в тёмной; меняется вместе с темой — и по системе, и по настройке. */
+.brand {
+  flex: none; display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; min-height: 2.75rem; padding: 0 .3rem 0 0;
+  border: 0; background: none; cursor: pointer; color: var(--ink); font-family: var(--display); font-weight: 600; font-size: 1.12rem;
+}
+.brand::before { content: ""; flex: none; width: 1.9rem; height: 1.9rem; background: url("../icons/icon.svg") center / contain no-repeat; }
+.brand:hover { color: var(--green); }
 /* Тот же знак крупно — на входе: наклеен на лист чуть криво, с плотной тенью, как оттиск. */
 .hero { display: grid; grid-template-columns: auto 1fr; gap: 1rem 1.6rem; align-items: center; }
 .mark { width: 8.5rem; aspect-ratio: 1; background: url("../icons/icon.svg") center / contain no-repeat; transform: rotate(-3deg); filter: drop-shadow(4px 5px 0 var(--rule)); }
 @media (max-width: 34rem) { .hero { grid-template-columns: 1fr; } .mark { width: 6rem; } }
+.mark.small { width: 2.4rem; transform: none; filter: none; flex: none; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .brand::before, :root:not([data-theme="light"]) .mark { background-image: url("../icons/icon-dark.svg"); }
 }
 :root[data-theme="dark"] .brand::before, :root[data-theme="dark"] .mark { background-image: url("../icons/icon-dark.svg"); }
-.nav { display: flex; gap: .25rem; flex-wrap: wrap; margin-left: auto; }
+/* Разделы приложения: если строка не помещается (крупный системный шрифт), она прокручивается вбок, а не
+   переносится — полоса остаётся в одну строку. */
+.nav { display: flex; gap: .15rem; margin-left: auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.nav::-webkit-scrollbar { display: none; }
 .nav a, .seg button {
-  text-decoration: none; color: var(--ink); padding: .3rem .6rem; border-radius: var(--r); border: 1px solid transparent; font-size: .92rem; background: none; cursor: pointer;
+  text-decoration: none; color: var(--ink); padding: .3rem .55rem; border-radius: var(--r); border: 1px solid transparent; font-size: .95rem; background: none; cursor: pointer;
 }
-.nav a[aria-current="page"] { border-color: var(--green); color: var(--green); }
-.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
-.seg button { border-radius: 0; padding: .25rem .5rem; font-size: .85rem; }
+.nav a { flex: none; display: inline-flex; align-items: center; min-height: 2.75rem; padding-block: 0; border-width: 0 0 2px; border-radius: 0; }
+.nav a:hover { color: var(--green); }
+.nav a[aria-current="page"] { border-color: var(--green); color: var(--green); font-weight: 700; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--rule); border-radius: var(--r); }
+.seg button { border-radius: 0; padding: .25rem .75rem; font-size: .92rem; }
+.seg button + button { border-left: 1px solid var(--rule); }
 .seg button[aria-pressed="true"] { background: var(--green); color: var(--green-ink); }
-/* На телефоне полоса не закреплена: три строки меню не должны съедать экран при чтении. */
-@media (max-width: 40rem) { .top { position: static; } .nav { margin-left: -.6rem; } }
+.seg button:first-child { border-radius: calc(var(--r) - 1px) 0 0 calc(var(--r) - 1px); }
+.seg button:last-child { border-radius: 0 calc(var(--r) - 1px) calc(var(--r) - 1px) 0; }
+/* Кнопка «Настройки»: значок и подпись; на телефоне — только значок (подпись остаётся для экранного диктора). */
+.top .set-btn { flex: none; display: inline-flex; align-items: center; gap: .4rem; min-height: 2.75rem; min-width: 2.75rem; justify-content: center; }
+.ico { width: 1.3rem; height: 1.3rem; flex: none; }
+.ico line { stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.ico circle { stroke: currentColor; stroke-width: 1.8; fill: var(--sheet); }
+@media (max-width: 40rem) {
+  .wide-only { display: none !important; }
+  .set-btn .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .top-in { gap: .35rem; }
+  .nav a { padding-inline: .45rem; }
+}
 /* Полоса закреплена сверху: при прокрутке к ответу или заголовку оставляем под неё место, иначе она их закроет.
-   Высоту полосы (--top-h) измеряет js/ui.js: полоса бывает в одну и в две строки. */
-@media (min-width: 40.0625rem) { html { scroll-padding-top: calc(var(--top-h, 5rem) + .75rem); } }
+   Высоту полосы (--top-h) измеряет js/ui.js. */
+html { scroll-padding-top: calc(var(--top-h, 3.5rem) + .75rem); }
+
+/* ---------- Окна «Настройки» и «Об учебнике» ---------- */
+/* На широком экране окно — карточка под полосой: настройки справа, под своей кнопкой, «Об учебнике» — слева,
+   под названием. На телефоне настройки выезжают снизу, как лист (их удобно достать большим пальцем). */
+dialog.panel {
+  position: fixed; inset: auto; top: calc(var(--top-h, 3.5rem) + .5rem); margin: 0; padding: 1rem 1.15rem 1.2rem;
+  width: min(25rem, calc(100vw - 2rem)); max-height: calc(100dvh - var(--top-h, 3.5rem) - 1.5rem); overflow: auto;
+  background: var(--sheet); color: var(--ink); border: 1px solid var(--rule); border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .18), 0 2px 6px rgba(0, 0, 0, .08);
+}
+dialog.panel:modal { overscroll-behavior: contain; }
+dialog.panel::backdrop { background: rgba(10, 16, 12, .32); overflow: hidden; overscroll-behavior: contain; }
+dialog.settings { right: max(1rem, calc((100vw - 76rem) / 2)); }
+dialog.about { left: max(1rem, calc((100vw - 76rem) / 2)); width: min(28rem, calc(100vw - 2rem)); }
+@media (max-width: 40rem) {
+  dialog.settings {
+    top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-width: none; max-height: 88dvh;
+    border-radius: 14px 14px 0 0; border-bottom: 0; padding-bottom: max(1.4rem, env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  dialog.panel[open] { animation: panel-in .16s ease-out; }
+  @media (max-width: 40rem) { dialog.settings[open] { animation: sheet-in .22s ease-out; } }
+}
+@keyframes panel-in { from { opacity: 0; transform: translateY(-.4rem); } }
+@keyframes sheet-in { from { transform: translateY(100%); } }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .4rem; }
+.panel-head h2 { font-size: 1.25rem; }
+.panel-x { flex: none; width: 2.75rem; height: 2.75rem; margin: -.4rem -.5rem -.4rem 0; border: 0; border-radius: 50%; background: none; cursor: pointer; font-size: 1.6rem; line-height: 1; color: var(--ink-2); }
+.panel-x:hover { background: var(--paper); color: var(--ink); }
+.about-name { display: flex; align-items: center; gap: .6rem; font-size: 1.5rem; }
+dialog.about p { margin: .6rem 0 0; }
+.set-part { display: grid; gap: .5rem; padding-block: .85rem; border-top: 1px solid var(--rule); }
+.set-part:first-of-type { border-top: 0; padding-top: .3rem; }
+.set-part h3 { font-family: var(--body); font-weight: 700; font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.set-part p { margin: 0; }
+.set-part .seg { justify-self: start; }
+.set-part .seg button { min-height: 2.75rem; }
+.set-part .draft { color: var(--ochre); }
+/* Тумблер «Группой»: обычный флажок в виде переключателя. Дорожка и ручка обведены цветом текста (контраст 3:1
+   и выше в обоих состояниях); в режиме высокой контрастности Windows остаётся системный флажок. */
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 2.75rem; cursor: pointer; font-weight: 700; }
+.switch { appearance: none; -webkit-appearance: none; flex: none; position: relative; width: 2.9rem; height: 1.7rem; margin: 0; border: 2px solid var(--ink-2); border-radius: 999px; background: transparent; cursor: pointer; }
+.switch::before { content: ""; position: absolute; top: 2px; left: 2px; width: calc(1.7rem - 8px); height: calc(1.7rem - 8px); border-radius: 50%; background: var(--ink-2); }
+.switch:checked { background: var(--green); border-color: var(--green); }
+.switch:checked::before { background: var(--green-ink); transform: translateX(1.2rem); }
+@media (prefers-reduced-motion: no-preference) { .switch, .switch::before { transition: background-color .15s, transform .15s; } }
+@media (forced-colors: active) { .switch { appearance: auto; -webkit-appearance: auto; width: auto; height: auto; border: 0; } .switch::before { display: none; } }
 
 /* ---------- Каркас страниц ---------- */
 main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 1.25rem 4rem; }
-.page { max-width: 76rem; margin: 0 auto; display: grid; gap: 1.25rem; }
+/* Колонка страницы не шире экрана: строка, которая прокручивается вбок (ступени раздела), не раздвигает её. */
+.page { max-width: 76rem; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
 .reading { max-width: 42rem; width: 100%; }
 .sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r); padding: clamp(1rem, 3.5vw, 1.75rem); min-width: 0; }
 .row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
@@ -124,9 +195,10 @@ main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: m
 .section-id { display: grid; grid-template-columns: auto 1fr; gap: 0 .9rem; align-items: end; margin-top: .5rem; }
 .section-id p { margin: 0; }
 .section-no { font-family: var(--display); font-size: clamp(3rem, 12vw, 5rem); line-height: .85; color: var(--green); opacity: .9; }
-/* Ступени переносятся на новую строку (.steps ol), без прокрутки: у прокрутки появлялась лишняя полоса. */
+/* Ступени — одна строка. На узком экране она прокручивается вбок (полосы прокрутки не видно, край строки, за
+   которым есть ещё ступени, плавно гаснет — классы more-l и more-r ставит js/app.js) и выходит к краям экрана. */
 .steps { padding-bottom: .2rem; }
-.steps a { flex: 0 0 auto; text-decoration: none; color: var(--ink-2); padding: .4rem .65rem; border-bottom: 2px solid transparent; font-size: .95rem; }
+.steps a { flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 2.75rem; white-space: nowrap; text-decoration: none; color: var(--ink-2); padding: .4rem .65rem; border-bottom: 2px solid transparent; font-size: .95rem; }
 .steps a .n { font-family: var(--display); margin-right: .3rem; }
 .steps a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--green); font-weight: 700; }
 /* Ступень без текста: пунктир снизу и подпись «скоро» для экранного диктора; цвет текста — полный (контраст AA). */
@@ -215,20 +287,34 @@ pre.src { background: var(--paper); border: 1px solid var(--rule); border-radius
 h1:focus, h2:focus, h3:focus { outline: none; }
 .skip { position: absolute; left: .5rem; top: -3rem; z-index: 20; background: var(--green); color: var(--green-ink); padding: .5rem .8rem; border-radius: var(--r); }
 .skip:focus { top: .5rem; }
-.tools { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; }
-.tool { border: 1px solid var(--rule); background: none; border-radius: var(--r); padding: .3rem .6rem; font-size: .88rem; cursor: pointer; min-height: 2.25rem; }
+.tool { border: 1px solid var(--rule); background: none; border-radius: var(--r); padding: .3rem .6rem; font-size: .92rem; cursor: pointer; min-height: 2.25rem; }
+.tool:hover { border-color: var(--green); color: var(--green); }
 .tool[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: var(--green-ink); }
 .seg button { min-height: 2.25rem; min-width: 2.75rem; }
-.draft-lang { max-width: 76rem; margin: 0 auto; padding: .3rem 0 .5rem; font-size: .85rem; color: var(--ochre); }
+.toggle { min-height: 2.75rem; }
+.top-notes { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.top-notes:empty { display: none; }
+.draft-lang { max-width: 76rem; margin: 0 auto; padding: .4rem 0 0; font-size: .85rem; color: var(--ochre); }
 .mission .draft-lang { padding: 0 0 .8rem; }
-.top-note { max-width: 76rem; margin: 0 auto; padding: .3rem 0 .5rem; font-size: .85rem; color: var(--ink-2); }
+.top-note { max-width: 76rem; margin: 0 auto; padding: .4rem 0 0; font-size: .85rem; color: var(--ink-2); }
+.page-info { margin-top: .2rem; }
+.page-info ul { margin: .4rem 0 0; padding-left: 1.2rem; }
 #app { display: block; }
 #app:focus { outline: none; }
 .group #app { zoom: 1.22; }
 .lead { font-size: 1.12rem; }
 .crumbs { font-size: .9rem; }
 .section-title { font-family: var(--display); font-weight: 600; font-size: 1.32rem; }
-.steps ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .35rem; }
+.steps ol { position: relative; list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: nowrap; gap: .2rem; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+.steps ol::-webkit-scrollbar { display: none; }
+.steps li { flex: none; }
+.fade-row.more-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 2.5rem), transparent); }
+.fade-row.more-l { -webkit-mask-image: linear-gradient(to right, transparent, #000 2.5rem); mask-image: linear-gradient(to right, transparent, #000 2.5rem); }
+.fade-row.more-l.more-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent); mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent); }
+/* Строка с прокруткой обрезает всё, что выходит за её край, — и рамку фокуса. Поэтому у её пунктов (и у кнопок
+   групп выбора) рамка рисуется внутри кнопки, а не снаружи. */
+.nav a:focus-visible, .steps a:focus-visible, .seg button:focus-visible { outline-offset: -3px; }
+@media (max-width: 40rem) { .steps { margin-inline: -16px; width: auto; max-width: none; } .steps ol { padding-inline: 16px; scroll-padding-inline: 16px; } }
 .steps .tick { margin-left: .35rem; }
 .map { list-style: none; margin: 0; padding: 0; }
 .map > li { display: grid; }

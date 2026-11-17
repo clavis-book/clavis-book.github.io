@@ -13,7 +13,6 @@
   const check = CM.validate({ expected, model: typeof NonceReuse !== 'undefined' ? NonceReuse : null });
   const errors = check.issues.filter(i => i.level === 'ошибка');
 
-  let paintOffline = null;                   // перерисовка блока «Учебник на этом устройстве», если он на экране
   const page = (...kids) => { app.replaceChildren(h('div', { class: 'page' }, kids)); window.scrollTo(0, 0); V.focusTitle(app); };
   const errorBanner = () => errors.length
     ? h('p', { class: 'banner bad', role: 'status' }, t('ошибки.баннер', { n: errors.length }), ' ', h('a', { href: '#model' }, t('ошибки.смотреть')))
@@ -27,69 +26,26 @@
     return l === 'все' ? t('раздел.все-лекции') : l;
   }
 
-  // ---------- Учебник на этом устройстве: работа без интернета и установка (js/offline.js) ----------
-  // Блок есть только на сайте: из папки на диске учебник и так открывается без интернета. Блок строится один
-  // раз; когда состояние меняется («сохраняю» → «сохранён»), меняются только текст и видимость его частей.
-  // Поэтому раскрытая подсказка не захлопывается, а фокус клавиатуры не пропадает.
-  function offlineBlock() {
-    const O = App.offline;
-    if (!O) return null;
-    const TEXT = { saving: 'офлайн.сохраняю', ready: 'офлайн.готово', updated: 'офлайн.обновлён' };
-    const title = h('h2', { id: 'off-h', tabindex: '-1' }, t('офлайн.заголовок'));
-    const status = h('p', {});
-    const open = h('a', { href: 'index.html' }, t('офлайн.открыть'));
-    // После нажатия кнопка исчезает (браузер показывает своё окно установки), поэтому фокус заранее уходит на заголовок.
-    const install = h('div', { class: 'row' },
-      h('button', { type: 'button', class: 'btn', onclick: () => { title.focus(); O.install(); } }, t('офлайн.установить')));
-    const how = h('details', { class: 'src-more' }, h('summary', {}, t('офлайн.как')),
-      h('ul', { class: 'note' }, ['android', 'iphone', 'компьютер'].map(k => h('li', {}, t('офлайн.' + k)))),
-      h('p', { class: 'note' }, t('офлайн.зачем')));
-    const box = h('section', { class: 'reading sheet stack', 'aria-labelledby': 'off-h' }, title, status, install, how);
-    paintOffline = () => {
-      const updated = O.state === 'updated';
-      box.hidden = O.state === 'none' && !O.prompt;
-      status.hidden = !TEXT[O.state];
-      // О новой версии вслух говорит строка в верхней полосе; здесь повтор был бы лишним.
-      if (updated) status.removeAttribute('role'); else status.setAttribute('role', 'status');
-      V.fill(status, TEXT[O.state] ? t(TEXT[O.state]) : null, updated ? [' ', open] : null);
-      install.hidden = !O.prompt || O.installed();
-      how.hidden = O.installed();
-    };
-    paintOffline();
-    return box;
-  }
-  // Верхняя полоса перестраивается один раз — когда пришла новая версия; фокус клавиатуры при этом сохраняется.
-  let toldUpdate = false;
-  if (App.offline) App.offline.onChange = () => {
-    if (App.offline.state === 'updated' && !toldUpdate) { toldUpdate = true; V.renderTop(undefined, true); }
-    if (paintOffline) paintOffline();
-  };
-
   // ---------- Вход ----------
   function entryScreen() {
     const tile = (href, title, text, soon) => h('a', { class: 'tile' + (soon ? ' soon' : ''), href: '#' + href },
       h('span', { class: 't' }, title), h('span', { class: 'a' }, text), soon ? h('span', { class: 'chip' }, t('скоро')) : null);
     // Знак учебника крупно: сама картинка — в стилях (меняется с темой), программам чтения с экрана она не нужна.
+    // История названия, работа без интернета, прогресс и модель содержания — в окнах верхней полосы (js/settings.js).
     page(h('div', { class: 'reading stack' },
       h('div', { class: 'hero' },
         h('span', { class: 'mark', 'aria-hidden': 'true' }),
         h('div', { class: 'stack' }, h('h1', {}, t('вход.заголовок')), h('p', { class: 'lead' }, t('вход.текст')))),
-      h('p', { class: 'small muted' }, t('вход.имя')),     // откуда название: слово с настоящей криптографической историей
       errorBanner()),
       h('div', { class: 'map entry' },
         tile('karta', t('вход.студенту'), t('вход.студенту-текст')),
         tile('prepodavatelyu', t('вход.преподавателю'), t('вход.преподавателю-текст')),
-        tile('proektor', t('вход.проектор'), t('вход.проектор-текст'), true)),
-      offlineBlock(),
-      h('p', { class: 'reading small muted' }, t('вход.устройство'), ' ', h('a', { href: '#model' }, t('вход.модель'))));
+        tile('proektor', t('вход.проектор'), t('вход.проектор-текст'), true)));
   }
 
   // ---------- Карта разделов ----------
+  // Стереть прогресс и коллекцию — в окне «Настройки» (js/settings.js).
   function mapScreen() {
-    const wipe = h('button', { type: 'button', class: 'btn ghost', onclick: () => {
-      if (wipe.dataset.sure !== '1') { wipe.dataset.sure = '1'; wipe.textContent = t('карта.стереть-точно'); return; }
-      S.progress = {}; S.quiz = {}; S.collection = { cards: [], badges: [] }; V.store.save(); mapScreen();
-    } }, t('карта.стереть'));
     page(h('div', { class: 'reading stack' },
       h('h1', {}, t('карта.заголовок')),
       h('p', { class: 'muted' }, t('карта.текст')),
@@ -110,9 +66,7 @@
       })),
       h('section', { class: 'reading sheet stack', 'aria-labelledby': 'coll-h' },
         h('h2', { id: 'coll-h' }, t('карта.коллекция')),
-        h('p', {}, t('карта.коллекция-текст', { карточек: V.collection.count('cards'), наград: V.collection.count('badges') })),
-        h('div', { class: 'row' }, wipe)),
-      offlineBlock());
+        h('p', {}, t('карта.коллекция-текст', { карточек: V.collection.count('cards'), наград: V.collection.count('badges') }))));
   }
 
   // ---------- Карта к экзамену ----------
@@ -194,14 +148,15 @@
     if (!file) {
       body.append(h('h1', {}, t('ступень.' + slug)), h('p', { class: 'chip' }, t('скоро')),
         h('p', {}, sec.plans[info.name] || t('ступень.нет-плана')));
-      return page(head, steps, body);
+      page(head, steps, body);
+      return V.fadeRow(steps.querySelector('ol'), true);
     }
+    // Над текстом — только то, что меняет чтение: перевод устарел или его нет. Время чтения не показывается,
+    // а состояние текста («черновик») и дата редакции — в сведениях «О странице» в конце.
     const ml = h('p', { class: 'meta-line' });
-    if (file.meta['минут']) ml.append(h('span', {}, t('ступень.минут', { n: file.meta['минут'] })));
-    if (file.meta['статус']) ml.append(h('span', { class: 'chip' + (file.meta['статус'] === 'готово' ? '' : ' warn') }, file.meta['статус']));
     if (own && ru && CM.dateKey(ru.meta['редакция']) > CM.dateKey(own.meta['перевод с'])) ml.append(h('span', { class: 'chip warn' }, t('ступень.перевод-устарел')));
     if (V.lang() !== 'ru' && !own) ml.append(h('span', { class: 'chip warn' }, t('ступень.нет-перевода')));
-    body.append(ml);
+    if (ml.childNodes.length) body.append(ml);
     if (file.kind === 'questions') body.append(h('h1', {}, t('ступень.proverka')), ...V.renderProse(file.items, ctx).filter(Boolean), App.quiz(file, ctx, secId));
     else {
       body.append(...V.renderProse(file.items, ctx, { file, mission: missionCard }).filter(Boolean));
@@ -221,9 +176,23 @@
         App.markDone(secId, info.slug); location.hash = next ? secId + '-' + next.slug : 'karta';
       } }, next ? t('ступень.готово-дальше', { ступень: t('ступень.' + next.slug) }) : t('ступень.готово-к-карте'))));
     }
-    body.append(V.sourcesSlot(ctx));
+    body.append(V.sourcesSlot(ctx), pageInfo(file, own));
     page(head, steps, body);
+    V.fadeRow(steps.querySelector('ol'), true);
   }
+  // Сведения о странице: состояние текста, дата редакции, у перевода — с какой редакции русского он сделан.
+  function pageInfo(file, own) {
+    const m = file.meta, lines = [];
+    // Состояние — словами интерфейса («черновик», «не проверено носителем»); незнакомое — как в файле.
+    const STATE = { 'черновик': 'draft', 'готово': 'ready', 'не проверено носителем': 'unchecked', 'проверено носителем': 'checked' };
+    if (m['статус']) lines.push(t('страница.состояние', { что: STATE[m['статус']] ? t('страница.статус.' + STATE[m['статус']]) : m['статус'] }));
+    if (m['редакция']) lines.push(t('страница.редакция', { когда: m['редакция'] }));
+    if (own && m['перевод с']) lines.push(t('страница.перевод-с', { когда: m['перевод с'] }));
+    if (!lines.length) return null;
+    return h('details', { class: 'src-more page-info' }, h('summary', {}, t('страница.о-странице')),
+      h('ul', { class: 'note' }, lines.map(x => h('li', {}, x))));
+  }
+
 
   // Карточка миссии внутри ступени: [[миссия: r11-m01]].
   function missionCard(missionId) {
@@ -234,7 +203,7 @@
     // Тексты миссии — русские; подписи и кнопка — на языке интерфейса, поэтому язык указан у каждой части.
     // «Пройти ещё раз» начинает миссию сначала, а не открывает прежнее заключение.
     return h('aside', { class: 'mission-card', lang: V.lang(), 'aria-labelledby': 'mc-' + missionId },
-      h('p', { class: 'small muted' }, t('миссии.карточка-метка'), ' · ', t('ступень.минут', { n: f(C, 'миссия', 'минут') })),
+      h('p', { class: 'small muted' }, t('миссии.карточка-метка')),
       h('h2', { id: 'mc-' + missionId, lang: 'ru' }, f(C, 'миссия', 'название')),
       h('p', { lang: 'ru' }, h('strong', {}, f(W, 'мир', 'название')), ' — ', f(W, 'мир', 'кратко')),
       V.lang() !== 'ru' ? h('p', { class: 'small' }, t('миссии.только-русский')) : null,
@@ -296,7 +265,6 @@
   // ---------- Маршруты ----------
   function route() {
     const r = CM.parseRoute(location.hash);
-    paintOffline = null;
     if (r.page === 'step' && forceRu && forceRu !== r.section + '-' + r.step) forceRu = null;
     // Ступень «Преподавателю» — в разделе преподавателя верхней полосы, остальные ступени — в разделе студента.
     const area = r.page === 'step' && r.step === 'prepod' ? 'prepodavatelyu' : r.page;
@@ -312,9 +280,15 @@
     if (r.page === 'model') return modelScreen();
     return notFound();
   }
-  // Тема и «Группой» меняют только оформление; язык — тексты, поэтому страница строится заново.
-  // Миссия идёт только на русском: смена языка меняет шапку, а миссию не начинает сначала.
-  V.onChange = k => { if (k === 'lang' && CM.parseRoute(location.hash).page !== 'mission') route(); };
+  // Тема и «Группой» меняют только оформление; язык — тексты, а стёртый прогресс — отметки (js/settings.js),
+  // поэтому страница строится заново. Миссия идёт только на русском: смена языка меняет шапку, а миссию не
+  // начинает сначала.
+  // После стирания прогресса страница остаётся на том же месте, а не уходит наверх.
+  V.onChange = k => {
+    if (CM.parseRoute(location.hash).page === 'mission') return;
+    if (k === 'lang') route();
+    if (k === 'progress') { const y = window.scrollY; route(); window.scrollTo(0, y); }
+  };
   V.applyPrefs();
   window.addEventListener('hashchange', route);
   route();

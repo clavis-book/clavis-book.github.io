@@ -8,7 +8,7 @@ const vm = require('node:vm');
 
 const ROOT = path.join(__dirname, '..');
 const read = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
-const PAGE_ONLY = ['js/ui.js', 'js/interactives.js', 'js/mission.js', 'js/offline.js', 'js/app.js'];
+const PAGE_ONLY = ['js/ui.js', 'js/interactives.js', 'js/mission.js', 'js/offline.js', 'js/settings.js', 'js/app.js'];
 const pageScripts = (html = 'index.html') => [...read(html).matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
 
 // replace — подмена текста отдельных файлов: { 'content/ru/r11-prosto.js': 'новый текст' }.

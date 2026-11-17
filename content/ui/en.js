@@ -7,7 +7,7 @@ App.ui(String.raw`
 что: строки интерфейса
 язык: en
 статус: не проверено носителем
-перевод с: 09.11.2026
+перевод с: 17.11.2026
 ---
 название: Clavis
 подзаголовок: an information security textbook and practicum
@@ -19,13 +19,32 @@ App.ui(String.raw`
 шапка.студенту: Students
 шапка.преподавателю: Teachers
 шапка.проектор: Projector
-шапка.язык: Language
-шапка.тема.auto: Theme: system
-шапка.тема.light: Theme: light
-шапка.тема.dark: Theme: dark
 шапка.группой: Group mode
 шапка.группой.пояснение: Large text and letters on answer options — for a class at a shared screen
 шапка.черновой-перевод: Draft interface translation: not yet checked by a native speaker.
+
+шапка.об-учебнике: Clavis — about the textbook
+шапка.настройки: Settings
+окно.закрыть: Close
+окно.на-главную: Go to the home page
+настройки.заголовок: Settings
+настройки.язык: Language
+настройки.тема: Appearance
+настройки.тема.auto: Match system
+настройки.тема.light: Light
+настройки.тема.dark: Dark
+настройки.группой: Class at a shared screen
+настройки.прогресс: Progress
+настройки.стёрто: Progress and the collection on this device have been erased.
+настройки.авторам: For authors
+страница.о-странице: About this page
+страница.состояние: Text status: {что}
+страница.редакция: Last revised: {когда}
+страница.перевод-с: Translated from the Russian text of {когда}
+страница.статус.draft: draft
+страница.статус.ready: final
+страница.статус.unchecked: translation not yet checked by a native speaker
+страница.статус.checked: translation checked by a native speaker
 
 вход.заголовок: Clavis
 вход.текст: A textbook and practicum on information security: the course “Cryptographic Methods of Information Protection” and topics beyond it. Each section goes in steps — from “Simply” with everyday examples to “Deeper” at university level, with models, questions and game missions.
@@ -65,7 +84,6 @@ App.ui(String.raw`
 ступень.proverka: Check yourself
 ступень.doma: At home
 ступень.prepod: For teachers
-ступень.минут: ≈ {n} min
 ступень.нет-плана: This step will appear later.
 ступень.перевод-устарел: translation out of date
 ступень.нет-перевода: no translation yet — showing the Russian text

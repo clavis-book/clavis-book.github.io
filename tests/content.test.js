@@ -63,7 +63,7 @@ test('строки интерфейса: каждый ключ из кода е�
   const ru = local(App.uiStrings.ru.strings);
   const missing = [];
   // Ключи, которые код называет прямо: t('…'), V.t('…'), rich('…'), plural('…'); у миссии — с приставкой «миссия.».
-  for (const f of ['js/ui.js', 'js/interactives.js', 'js/app.js', 'js/mission.js']) {
+  for (const f of ['js/ui.js', 'js/settings.js', 'js/interactives.js', 'js/app.js', 'js/mission.js']) {
     const src = stripComments(read(f));
     const prefix = f === 'js/mission.js' ? 'миссия.' : '';
     for (const m of src.matchAll(/(?<![\w.])(V\.)?(?:t|rich|plural|pluralRu)\('([^']+)'/g)) {
@@ -74,7 +74,10 @@ test('строки интерфейса: каждый ключ из кода е�
   // Ключи, которые код собирает из частей.
   const built = [
     ...['prosto', 'poprobuy', 'glubzhe', 'proverka', 'doma', 'prepod'].map(s => 'ступень.' + s),
-    ...['auto', 'light', 'dark'].map(s => 'шапка.тема.' + s),
+    ...['auto', 'light', 'dark'].map(s => 'настройки.тема.' + s),
+    ...['draft', 'ready', 'unchecked', 'checked'].map(s => 'страница.статус.' + s),
+    'офлайн.сохраняю', 'офлайн.готово', 'офлайн.обновлён',
+    ...['android', 'iphone', 'компьютер'].map(s => 'офлайн.' + s),
     ...['комната', 'стена', 'парковка', 'квартал'].map(s => 'радио.место.' + s),
     ...['файлов', 'вопросов', 'случаев', 'ссылок', 'проверить', 'аналогий', 'слов', 'без-перевода', 'миссий', 'уровень', 'файл', 'где', 'что'].map(s => 'модель.' + s),
     'повтор.16', 'повтор.24', 'повтор.32', 'радио.схема-в-зоне', 'радио.схема-вне-зоны',
@@ -300,7 +303,7 @@ test('хранилище: прогресс со старого ключа kilt:v
   // Страница читает хранилище только через перенос, а старый ключ в коде страницы больше нигде не встречается.
   assert.match(read('js/ui.js'), /text = ST\.load\(localStorage\);/);
   assert.doesNotMatch(read('js/ui.js'), /getItem\(/);
-  for (const f of ['js/app.js', 'js/ui.js', 'js/interactives.js', 'js/mission.js', 'js/offline.js', 'index.html', 'sw.js']) {
+  for (const f of ['js/app.js', 'js/ui.js', 'js/interactives.js', 'js/mission.js', 'js/offline.js', 'js/settings.js', 'index.html', 'sw.js']) {
     assert.doesNotMatch(read(f), /kilt:v1/, f);
   }
 });

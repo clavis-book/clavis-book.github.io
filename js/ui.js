@@ -1,5 +1,6 @@
 // Общие части страницы: хранилище на устройстве, строки интерфейса, построение страницы из узлов
-// (без вставки HTML-строк), строчная разметка и источники, выноски, верхняя полоса, тема и режим «Группой».
+// (без вставки HTML-строк), строчная разметка и источники, выноски, верхняя полоса, тема и режим «Группой»
+// (сами окна «Настройки» и «Об учебнике» — js/settings.js).
 // Тексты учебника — недоверенные данные: они попадают на страницу только как текст узлов.
 (function () {
   'use strict';
@@ -190,33 +191,58 @@
     keepTopFocus(() => { S[k] = v; store.save(); applyPrefs(); renderTop(); if (view.onChange) view.onChange(k); });
   }
 
-  // Верхняя полоса: название, разделы приложения, язык, тема, «Группой».
+  // Верхняя полоса — одна строка на любой ширине: название (нажатие открывает карточку «Об учебнике»), разделы
+  // приложения и кнопка «Настройки» (язык, оформление, «Группой» и остальное — в окне, js/settings.js).
+  // Под полосой, без закрепления, — пометки: черновой перевод интерфейса, новая версия учебника.
   // keepFocus — шапка меняется сама, не по действию человека (пришла новая версия): фокус остаётся, где был.
   function renderTop(current, keepFocus) {
     if (keepFocus) return keepTopFocus(() => renderTop(current));
     if (current !== undefined) view.area = current;
     const area = view.area;
-    const link = (href, key) => h('a', { href: '#' + href, 'aria-current': area === href ? 'page' : null }, t(key));
-    const nextTheme = { auto: 'light', light: 'dark', dark: 'auto' };
-    // У кнопок языка видимая подпись («RU») входит в имя для программ чтения с экрана («RU — Русский»).
+    const link = (href, key, cls) => h('a', { href: '#' + href, class: cls || null, 'aria-current': area === href ? 'page' : null }, t(key));
+    const panels = () => App.panels;   // окна подключаются позже (js/settings.js), к нажатию они уже есть
     fill(document.getElementById('top'),
       h('a', { class: 'skip', href: '#app', onclick: ev => { ev.preventDefault(); const m = document.getElementById('app'); m.focus(); m.scrollIntoView(); } }, t('шапка.к-содержанию')),
       h('div', { class: 'top-in' },
-        h('a', { class: 'brand', href: '#' }, t('название'), h('small', {}, t('подзаголовок'))),
+        // Видимое «Clavis» входит в имя кнопки для программ чтения с экрана: «Clavis — об учебнике».
+        h('button', { type: 'button', class: 'brand', 'data-focus': 'brand', 'aria-haspopup': 'dialog', 'aria-label': t('шапка.об-учебнике'), onclick: () => panels().about() }, t('название')),
+        // «Проектор» на узком экране не показывается: проектор подключают к компьютеру, а не к телефону.
         h('nav', { class: 'nav', 'aria-label': t('шапка.меню') },
-          link('karta', 'шапка.студенту'), link('prepodavatelyu', 'шапка.преподавателю'), link('proektor', 'шапка.проектор')),
-        h('div', { class: 'tools' },
-          h('div', { class: 'seg', role: 'group', 'aria-label': t('шапка.язык') }, [['ru', 'RU'], ['kk', 'ҚАЗ'], ['en', 'EN']].map(([l, n]) =>
-            h('button', { type: 'button', lang: l, 'data-focus': 'lang-' + l, 'aria-pressed': lang() === l ? 'true' : 'false', 'aria-label': n + ' — ' + { ru: 'Русский', kk: 'Қазақша', en: 'English' }[l], onclick: () => setPref('lang', l) }, n))),
-          h('button', { type: 'button', class: 'tool', 'data-focus': 'theme', onclick: () => setPref('theme', nextTheme[S.theme]) }, t('шапка.тема.' + S.theme)),
-          h('button', { type: 'button', class: 'tool', 'data-focus': 'group', 'aria-pressed': S.group ? 'true' : 'false', title: t('шапка.группой.пояснение'), onclick: () => setPref('group', !S.group) }, t('шапка.группой')))),
+          link('karta', 'шапка.студенту'), link('prepodavatelyu', 'шапка.преподавателю'), link('proektor', 'шапка.проектор', 'wide-only')),
+        h('button', { type: 'button', class: 'tool set-btn', 'data-focus': 'settings', 'aria-haspopup': 'dialog', onclick: () => panels().settings() },
+          gear(), h('span', { class: 'lbl' }, t('шапка.настройки')))));
+    fadeRow(document.getElementById('top').querySelector('.nav'));
+    fill(document.getElementById('top-notes'),
       lang() !== 'ru' ? h('p', { class: 'draft-lang' }, t('шапка.черновой-перевод')) : null,
       // Пришла новая версия учебника (js/offline.js): она уже на устройстве и откроется по ссылке или при следующем запуске.
       App.offline && App.offline.state === 'updated' ? h('p', { class: 'top-note', role: 'status' }, t('офлайн.обновлён'), ' ', h('a', { href: 'index.html' }, t('офлайн.открыть'))) : null);
     measureTop();
   }
-  // Высота верхней полосы — в переменную --top-h. На широком экране полоса закреплена, и стили по этой
-  // переменной оставляют под неё место при прокрутке к ответу или заголовку (полоса бывает в одну и в две строки).
+  // Строка, которая прокручивается вбок (разделы в полосе, ступени раздела): у края, за которым есть ещё пункты,
+  // она плавно гаснет (классы more-l и more-r). center — поставить текущий пункт (aria-current) в середину.
+  const edges = row => {
+    row.classList.toggle('more-l', row.scrollLeft > 2);
+    row.classList.toggle('more-r', row.scrollLeft + row.clientWidth < row.scrollWidth - 2);
+  };
+  function fadeRow(row, center) {
+    if (!row) return;
+    row.classList.add('fade-row');
+    const cur = center && row.querySelector('[aria-current]');
+    if (cur) { const li = cur.closest('li') || cur; row.scrollLeft = li.offsetLeft - (row.clientWidth - li.offsetWidth) / 2; }
+    edges(row);
+    row.addEventListener('scroll', () => edges(row), { passive: true });
+  }
+  // Ширина окна изменилась (поворот телефона) — края пересчитываются у всех таких строк на странице.
+  window.addEventListener('resize', () => document.querySelectorAll('.fade-row').forEach(edges));
+  // Значок настроек — три ползунка (как у регуляторов громкости): рисуется линиями, цвет — цвет текста.
+  function gear() {
+    return svg('svg', { class: 'ico', viewBox: '0 0 24 24', 'aria-hidden': 'true', focusable: 'false' },
+      [[5, 15], [12, 7], [19, 12]].map(([y, x]) => [
+        svg('line', { x1: 3, y1: y, x2: 21, y2: y }),
+        svg('circle', { cx: x, cy: y, r: 2.4 })]));
+  }
+  // Высота верхней полосы — в переменную --top-h. Полоса закреплена, и стили по этой переменной оставляют под неё
+  // место при прокрутке к ответу или заголовку, а окна настроек и «Об учебнике» открываются сразу под ней.
   function measureTop() {
     document.documentElement.style.setProperty('--top-h', document.getElementById('top').offsetHeight + 'px');
   }
@@ -235,7 +261,7 @@
     count: kind => (S.collection[kind] || []).length
   };
 
-  Object.assign(view, { S, store, h, fill, svg, t, rich, plural, num, locale, lang, newCtx, inline, cite, sourcesBlock, sourcesSlot, refreshSources,
+  Object.assign(view, { S, store, h, fill, svg, t, rich, plural, num, locale, lang, newCtx, inline, cite, sourcesBlock, sourcesSlot, refreshSources, fadeRow,
     callout, renderProse, applyPrefs, renderTop, setPref, focusTitle, collection, reduceMotion });
   App.view = view;
 })();
